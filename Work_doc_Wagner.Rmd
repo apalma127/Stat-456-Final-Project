@@ -10,11 +10,6 @@ install.packages("nflfastR")
 ```
 
 ```{r}
-install.packages("ggrepel")
-```
-
-
-```{r}
 library(nflfastR)
 library(dplyr)
 library(tidyverse)
@@ -25,11 +20,7 @@ pbp_2021 <- load_pbp(2021)
 
 ```{r}
 pbp_2021 %>% 
-  filter(play_type == 'pass') %>% 
-  group_by(passer) %>% 
-  mutate(plays = n()) %>% 
-  filter(plays>20)  
-  #summarize(mean_epa=mean(epa)
-  
+  filter(half_seconds_remaining<300) %>% 
+  group_by(game_id, drive) %>% 
+  summarise( drive_play_count, drive_, ydsnet)
 ```
-

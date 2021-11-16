@@ -1,6 +1,6 @@
 ---
-title: "Work Doc"
-author: "Palma and Wagner"
+title: "Work Doc - Palma"
+author: "Palma"
 date: "11/16/2021"
 output: html_document
 ---
@@ -8,6 +8,11 @@ output: html_document
 ```{r}
 install.packages("nflfastR")
 ```
+
+```{r}
+install.packages("ggrepel")
+```
+
 
 ```{r}
 library(nflfastR)
@@ -25,4 +30,3 @@ pbp_2021 %>%
   summarise( drive_play_count, as.integer(drive_game_clock_start), ydsnet)
   
 ```
-

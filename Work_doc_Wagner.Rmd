@@ -1,0 +1,35 @@
+---
+title: "Work Doc - Ben"
+author: "Wagner"
+date: "11/16/2021"
+output: html_document
+---
+
+```{r}
+install.packages("nflfastR")
+```
+
+```{r}
+install.packages("ggrepel")
+```
+
+
+```{r}
+library(nflfastR)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+pbp_2021 <- load_pbp(2021)
+```
+
+```{r}
+pbp_2021 %>% 
+  filter(play_type == 'pass') %>% 
+  group_by(passer) %>% 
+  mutate(plays = n()) %>% 
+  filter(plays>20)  
+  #summarize(mean_epa=mean(epa)
+  
+```
+

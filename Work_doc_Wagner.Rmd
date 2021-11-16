@@ -15,12 +15,18 @@ library(dplyr)
 library(tidyverse)
 library(ggplot2)
 library(ggrepel)
+library(lubridate)
 pbp_2021 <- load_pbp(2021)
 ```
 
 ```{r}
-pbp_2021 %>% 
-  filter(half_seconds_remaining<300) %>% 
-  group_by(game_id, drive) %>% 
-  summarise( drive_play_count, drive_, ydsnet)
+Two_min_drill <- pbp_2021 %>% 
+  filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
+  
+Two_min_drill %>% 
+  group_by(game_id, drive) %>%
+  summarise( drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result) %>%
+  mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
+  fg = ifelse(fixed_drive_result=='Field goal', 1, 0))
+
 ```

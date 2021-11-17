@@ -5,13 +5,20 @@ date: "11/16/2021"
 output: html_document
 ---
 
-```{r}
-install.packages("nflfastR")
-```
 
-```{r}
-install.packages("ggrepel")
-```
+For the projects, I want to give some suggested due dates:
+
+Friday 11/19: 1. Create a GitHub project and add collaborators (I'll go through an example of this on Tuesday). 2. At least 1 data source obtained,  data read in to R, basic visualizations/summarizations to verify data is as expected. Start doing some data cleaning. 3. Outline of analysis plan with some of the steps completed.
+
+Tuesday 11/23: 1. Read in and clean other two sources of data. 2. Finish a couple of the analysis steps and write them up completely. I recommend focusing on the "final product" first. 3. Create an RMarkdown file for the "behind-the-scenes" report and be sure to keep track of any detailed explanations of methods and code there. 
+
+Thursday 12/2: 1. Complete most of the analyses and have a draft of the "final product". 2. Begin creating a presentation. 3. Create a detailed outline of what will go in the "behind-the-scenes". 
+
+Tuesday 12/7: 1. "Final product" complete. 2. Finish the 15 minute presentation and practice it with your group. 
+
+Thursday 12/9: 1. Submit "final product" on moodle. 2. Give presentations - we may need to use a bit of the lunch hour. 
+
+Thursday 12/16: Submit "behind-the-scenes" (you can always submit early, if you'd like). 
 
 
 ```{r}
@@ -20,13 +27,91 @@ library(dplyr)
 library(tidyverse)
 library(ggplot2)
 library(ggrepel)
+library(stringr)
+library(lubridate)
 pbp_2021 <- load_pbp(2021)
 ```
 
 ```{r}
 pbp_2021 %>% 
-  filter(half_seconds_remaining<300) %>% 
+  mutate(clock = as.numeric(ms(drive_game_clock_start))) %>%
+  mutate(drive_success = ifelse(fixed_drive_result == "Field goal" | "Touchdown", 1, 0)) %>%
+  filter(half_seconds_remaining<300, clock < 150) %>% 
   group_by(game_id, drive) %>% 
-  summarise( drive_play_count, as.integer(drive_game_clock_start), ydsnet)
-  
+  summarise(drive_play_count, drive, ydsnet, drive_game_clock_start, clock, fixed_drive_result) 
 ```
+
+
+
+```{r}
+Two_min_drill <- pbp_2021 %>% 
+  filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
+  
+Two_min_drill %>% 
+  group_by(game_id, drive) %>%
+  summarise( drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result) %>%
+  mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
+  fg = ifelse(fixed_drive_result=='Field goal', 1, 0))
+```
+
+```{r}
+https://opensource.pysport.org/project/nflscrapR
+
+# use in intro to show two min drill effect on win prob
+
+
+```
+
+```{r}
+devtools::install_github(repo = "maksimhorowitz/nflscrapR")
+# or the following (these are the exact same packages):
+devtools::install_github(repo = "ryurko/nflscrapR")
+```
+
+
+```{r}
+library(nflscrapR)
+
+```
+
+
+
+```{r}
+nfl_teamcolors <- teamcolors %>% filter(league == "nfl")
+
+ne_color <- nfl_teamcolors %>%
+  filter(name == "New England Patriots") %>%
+  pull(primary)
+kc_color <- nfl_teamcolors %>%
+  filter(name == "Kansas City Chiefs") %>%
+  pull(primary)
+
+kc_vs_pit_pbp %>%
+  filter(!is.na(home_wp),
+         !is.na(away_wp)) %>%
+  dplyr::select(game_seconds_remaining,
+                home_wp,
+                away_wp) %>%
+  gather(team, wpa, -game_seconds_remaining) %>%
+  ggplot(aes(x = game_seconds_remaining, y = wpa, color = team)) +
+  geom_line(size = 2) +
+  geom_hline(yintercept = 0.5, color = "gray", linetype = "dashed") +
+  scale_color_manual(labels = c("NE", "KC"),
+                     values = c(ne_color, kc_color),
+                     guide = FALSE) +
+  scale_x_reverse(breaks = seq(0, 3600, 300)) + 
+  annotate("text", x = 3000, y = .75, label = "KC", color = kc_color, size = 8) + 
+  annotate("text", x = 3000, y = .25, label = "PIT", color = pit_color, size = 8) +
+  geom_vline(xintercept = 900, linetype = "dashed", black) + 
+  geom_vline(xintercept = 1800, linetype = "dashed", black) + 
+  geom_vline(xintercept = 2700, linetype = "dashed", black) + 
+  geom_vline(xintercept = 0, linetype = "dashed", black) + 
+  labs(
+    x = "Time Remaining (seconds)",
+    y = "Win Probability",
+    title = "Week 2 Win Probability Chart",
+    subtitle = "Kansas City Chiefs vs. Pittsburgh Steelers",
+    caption = "Data from nflscrapR"
+  ) + theme_bw()
+```
+

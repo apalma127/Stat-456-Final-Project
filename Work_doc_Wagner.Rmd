@@ -5,6 +5,21 @@ date: "11/16/2021"
 output: html_document
 ---
 
+For the projects, I want to give some suggested due dates:
+
+Friday 11/19: 1. Create a GitHub project and add collaborators (I'll go through an example of this on Tuesday). 2. At least 1 data source obtained,  data read in to R, basic visualizations/summarizations to verify data is as expected. Start doing some data cleaning. 3. Outline of analysis plan with some of the steps completed.
+
+Tuesday 11/23: 1. Read in and clean other two sources of data. 2. Finish a couple of the analysis steps and write them up completely. I recommend focusing on the "final product" first. 3. Create an RMarkdown file for the "behind-the-scenes" report and be sure to keep track of any detailed explanations of methods and code there. 
+
+Thursday 12/2: 1. Complete most of the analyses and have a draft of the "final product". 2. Begin creating a presentation. 3. Create a detailed outline of what will go in the "behind-the-scenes". 
+
+Tuesday 12/7: 1. "Final product" complete. 2. Finish the 15 minute presentation and practice it with your group. 
+
+Thursday 12/9: 1. Submit "final product" on moodle. 2. Give presentations - we may need to use a bit of the lunch hour. 
+
+Thursday 12/16: Submit "behind-the-scenes" (you can always submit early, if you'd like). 
+
+
 ```{r}
 install.packages("nflfastR")
 install.packages("nflreadr")

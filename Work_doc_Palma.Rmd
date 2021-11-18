@@ -29,29 +29,18 @@ library(ggplot2)
 library(ggrepel)
 library(stringr)
 library(lubridate)
+
+library(tidymodels)        # for modeling
+library(themis)            # for step functions for unbalanced data
+library(doParallel)        # for parallel processing
+library(stacks)            # for stacking models
+library(naniar)            # for examining missing values (NAs)
+library(moderndive)        # for King County housing data
+library(vip)               # for variable importance plots
+library(patchwork)         # for combining plots nicely
+library(ranger)
+library(xgboost)
 pbp_2021 <- load_pbp(2021)
-```
-
-```{r}
-pbp_2021 %>% 
-  mutate(clock = as.numeric(ms(drive_game_clock_start))) %>%
-  mutate(drive_success = ifelse(fixed_drive_result == "Field goal" | "Touchdown", 1, 0)) %>%
-  filter(half_seconds_remaining<300, clock < 150) %>% 
-  group_by(game_id, drive) %>% 
-  summarise(drive_play_count, drive, ydsnet, drive_game_clock_start, clock, fixed_drive_result) 
-```
-
-
-
-```{r}
-Two_min_drill <- pbp_2021 %>% 
-  filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
-  
-Two_min_drill %>% 
-  group_by(game_id, drive) %>%
-  summarise( drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result) %>%
-  mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
-  fg = ifelse(fixed_drive_result=='Field goal', 1, 0))
 ```
 
 ```{r}
@@ -75,43 +64,113 @@ library(nflscrapR)
 ```
 
 
+```{r}
+Two_min_drill <- pbp_2021 %>% 
+  filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
+  
+two_min_new <- Two_min_drill %>% 
+  group_by(game_id, drive) %>%
+  select(drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result) %>%
+  mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
+  fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>%
+  ungroup()
+
+```
+
 
 ```{r}
-nfl_teamcolors <- teamcolors %>% filter(league == "nfl")
-
-ne_color <- nfl_teamcolors %>%
-  filter(name == "New England Patriots") %>%
-  pull(primary)
-kc_color <- nfl_teamcolors %>%
-  filter(name == "Kansas City Chiefs") %>%
-  pull(primary)
-
-kc_vs_pit_pbp %>%
-  filter(!is.na(home_wp),
-         !is.na(away_wp)) %>%
-  dplyr::select(game_seconds_remaining,
-                home_wp,
-                away_wp) %>%
-  gather(team, wpa, -game_seconds_remaining) %>%
-  ggplot(aes(x = game_seconds_remaining, y = wpa, color = team)) +
-  geom_line(size = 2) +
-  geom_hline(yintercept = 0.5, color = "gray", linetype = "dashed") +
-  scale_color_manual(labels = c("NE", "KC"),
-                     values = c(ne_color, kc_color),
-                     guide = FALSE) +
-  scale_x_reverse(breaks = seq(0, 3600, 300)) + 
-  annotate("text", x = 3000, y = .75, label = "KC", color = kc_color, size = 8) + 
-  annotate("text", x = 3000, y = .25, label = "PIT", color = pit_color, size = 8) +
-  geom_vline(xintercept = 900, linetype = "dashed", black) + 
-  geom_vline(xintercept = 1800, linetype = "dashed", black) + 
-  geom_vline(xintercept = 2700, linetype = "dashed", black) + 
-  geom_vline(xintercept = 0, linetype = "dashed", black) + 
-  labs(
-    x = "Time Remaining (seconds)",
-    y = "Win Probability",
-    title = "Week 2 Win Probability Chart",
-    subtitle = "Kansas City Chiefs vs. Pittsburgh Steelers",
-    caption = "Data from nflscrapR"
-  ) + theme_bw()
+two_min_new
 ```
+
+```{r}
+two_min_final <- 
+  two_min_new %>%
+  mutate(game_id = as.factor(game_id), 
+         drive_game_clock_start = as.factor(drive_game_clock_start), 
+         fixed_drive_result = as.factor(fixed_drive_result))
+```
+
+```{r}
+two_min_final
+```
+
+
+```{r}
+two_min_final %>%
+  count(game_id)
+```
+
+```{r}
+two_min_final %>%
+  count(drive)
+```
+
+```{r}
+two_min_final %>%
+  count(drive_play_count)
+```
+
+```{r}
+two_min_final %>%
+  count(ydsnet)
+```
+
+```{r}
+two_min_final %>%
+  count(drive_game_clock_start)
+```
+
+```{r}
+two_min_final %>%
+  count(fixed_drive_result)
+```
+
+
+```{r}
+two_min_final %>%
+  count(td)
+```
+
+```{r}
+two_min_final %>%
+  count(fg)
+```
+
+
+1.  Exploring Data
+
+
+**Quant Vars**
+
+```{r}
+two_min_final %>% 
+  select(where(is.numeric)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "variable", 
+               values_to = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_histogram(bins = 30) +
+  facet_wrap(vars(variable), 
+             scales = "free")
+```
+
+**Categorical**
+
+```{r}
+two_min_final %>%
+select(where(is.factor)) %>% 
+  pivot_longer(cols = everything(),
+               names_to = "variable", 
+               values_to = "value") %>% 
+  ggplot(aes(x = value)) +
+  geom_bar() +
+  facet_wrap(vars(variable), 
+             scales = "free", 
+             nrow = 3)
+```
+
+
+
+
+
 

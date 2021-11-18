@@ -44,13 +44,26 @@ Two_min_drill <- pbp_2021 %>%
   
 Two_min_drill %>% 
   group_by(game_id, drive) %>%
-  summarise( drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result, name, posteam, week) %>%
+  select(drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result, name, posteam, week) %>%
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
   fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>% 
-  mutate(score= ifelse(td+fg==1, 1,0))
+  mutate(score= ifelse(td+fg==1, 1,0)) %>% 
+  right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb")) %>% 
+  select(!game_id.y) %>% 
+  ggplot(aes(x= score, y=qbr_total))+
+  geom_boxplot()+
+  facet_wrap(vars(score))
 
 ```
 
 ```{r}
+Two_min_drill
+
+Two_min_drill %>% 
+  group_by(game_id, drive) %>%
+  mutate(rush_attempt = ifelse(is.na(rush_attempt), 0, rush_attempt)) %>% 
+  mutate(pass_attempt = ifelse(is.na(pass_attempt), 0, pass_attempt)) %>%
+  summarize(num_plays= n(), num_rush=sum(rush_attempt), num_pass= sum(pass_attempt))
+  
 ```
 

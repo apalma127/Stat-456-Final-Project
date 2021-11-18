@@ -43,18 +43,9 @@ library(xgboost)
 pbp_2021 <- load_pbp(2021)
 ```
 
-```{r}
-https://opensource.pysport.org/project/nflscrapR
-
-# use in intro to show two min drill effect on win prob
-
-
-```
 
 ```{r}
-devtools::install_github(repo = "maksimhorowitz/nflscrapR")
-# or the following (these are the exact same packages):
-devtools::install_github(repo = "ryurko/nflscrapR")
+#devtools::install_github(repo = "ryurko/nflscrapR")
 ```
 
 
@@ -65,16 +56,34 @@ library(nflscrapR)
 
 
 ```{r}
-Two_min_drill <- pbp_2021 %>% 
+two_min_drill <- pbp_2021 %>% 
   filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
   
-two_min_new <- Two_min_drill %>% 
+two_min_new <- two_min_drill %>% 
   group_by(game_id, drive) %>%
-  select(drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result) %>%
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
-  fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>%
+  fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
+  score= ifelse(td+fg==1, 1,0)) %>%
   ungroup()
 
+```
+
+
+```{r}
+two_min_by_drive <- 
+  two_min_drill %>%
+    group_by(drive, game_id) %>%
+    mutate(run_plays = sum(rush_attempt, na.rm = TRUE), 
+           pass_plays = sum(pass_attempt, na.rm = TRUE), 
+           pass_tot_yds = sum(air_yards, na.rm = TRUE), 
+           completion_perc = (1- sum(incomplete_pass, na.rm = TRUE) / pass_plays), 
+           penalties = sum(penalty, na.rm = TRUE)) %>%
+    select(run_plays, pass_plays, rush_attempt, pass_attempt, pass_tot_yds, completion_perc, penalties, drive_yards_penalized, yards_gained)
+```
+
+
+```{r}
+two_min_by_drive
 ```
 
 
@@ -93,6 +102,16 @@ two_min_final <-
 ```{r}
 two_min_final
 ```
+
+```{r}
+count<-apply(two_min_final, 2, function(col) sum(is.na(col))/length(col))
+dims<-dim(two_min_final)
+num<-dims[1]*dims[2]
+NApercentage<-(count/num) 
+print(NApercentage)
+
+```
+
 
 
 ```{r}
@@ -137,6 +156,11 @@ two_min_final %>%
 ```
 
 
+```{r}
+two_min_final %>%
+  count(score)
+```
+
 1.  Exploring Data
 
 
@@ -151,7 +175,9 @@ two_min_final %>%
   ggplot(aes(x = value)) +
   geom_histogram(bins = 30) +
   facet_wrap(vars(variable), 
-             scales = "free")
+             scales = "free", 
+            nrow = 25)
+
 ```
 
 **Categorical**
@@ -169,7 +195,43 @@ select(where(is.factor)) %>%
              nrow = 3)
 ```
 
+2.  Training / Testing 
 
+
+```{r}
+set.seed(2)
+
+two_min_split <- initial_split(two_min_drill, 
+                             prop = .75, strata = "score")
+
+two_min_training <- training(two_min_split)
+two_min_testing <- testing(two_min_split)
+```
+
+
+3. Set up the recipe and the pre-processing steps to build a lasso model
+
+```{r}
+set.seed(2)
+
+lasso_recipe <- recipe(score ~ ., 
+                       data = two_min_training) %>% 
+  # step_upsample(score, over_ratio = 0.5) %>%
+  # step_downsample(score, under_ratio = 1) %>%
+  step_mutate_at(all_numeric(), 
+                fn = ~ as.numeric(.)) %>%
+  step_dummy(all_nominal(), 
+             -all_outcomes()) %>% 
+  step_normalize(all_predictors(), 
+                 -all_nominal())
+```
+
+
+```{r}
+lasso_recipe %>% 
+  prep(two_min_training) %>%
+  juice() 
+```
 
 
 

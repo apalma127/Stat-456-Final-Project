@@ -33,6 +33,9 @@ library(ggplot2)
 library(ggrepel)
 library(lubridate)
 pbp_2021 <- load_pbp(2021)
+nfl_qbr_weekly <- readr::read_csv("https://raw.githubusercontent.com/nflverse/espnscrapeR-data/master/data/qbr-nfl-weekly.csv")
+nfl_qbr_weekly<-nfl_qbr_weekly %>% 
+  filter(season==2021)
 ```
 
 ```{r}
@@ -41,8 +44,13 @@ Two_min_drill <- pbp_2021 %>%
   
 Two_min_drill %>% 
   group_by(game_id, drive) %>%
-  summarise( drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result) %>%
+  summarise( drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result, name, posteam, week) %>%
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
-  fg = ifelse(fixed_drive_result=='Field goal', 1, 0))
+  fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>% 
+  mutate(score= ifelse(td+fg==1, 1,0))
 
 ```
+
+```{r}
+```
+

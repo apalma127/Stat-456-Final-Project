@@ -40,6 +40,7 @@ library(vip)               # for variable importance plots
 library(patchwork)         # for combining plots nicely
 library(ranger)
 library(xgboost)
+library(dplyr)
 pbp_2021 <- load_pbp(2021)
 ```
 
@@ -51,6 +52,7 @@ pbp_2021 <- load_pbp(2021)
 
 ```{r}
 library(nflscrapR)
+library(na.tools)
 
 ```
 
@@ -68,10 +70,28 @@ two_min_new <- two_min_drill %>%
 
 ```
 
+```{r}
+getmode <- function(v) {
+    v <- na.rm()
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+```
+
+
+```{r}
+two_min_new <- two_min_new[!is.na(two_min_new$passer), ] 
+```
+
+```{r}
+two_min_new %>%
+  select(passer, game_id, rusher)
+```
+
 
 ```{r}
 two_min_by_drive <- 
-  two_min_drill %>%
+  two_min_new  %>%
     group_by(drive, game_id) %>%
     mutate(run_plays = sum(rush_attempt, na.rm = TRUE), 
            pass_plays = sum(pass_attempt, na.rm = TRUE), 
@@ -80,10 +100,12 @@ two_min_by_drive <-
            penalties = sum(penalty, na.rm = TRUE), 
            tot_yds = sum(yards_gained, na.rm = TRUE),
            rush_yds_tot = sum(rushing_yards, na.rm = TRUE)) %>% 
+           #rusher = as.character(rusher),
+           #rusher = ifelse( is.na(rusher) == TRUE, getmode(rusher), rusher)) %>% 
      mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
             fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
-            score= ifelse(td+fg==1, 1,0)) %>%
-    select(pass_tot_yds, tot_yds, rush_yds_tot, completion_perc, run_plays, pass_plays, penalties, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score)
+            score = ifelse(td+fg==1, 1,0)) %>%
+    select(passer, pass_tot_yds, tot_yds, rush_yds_tot, rusher, completion_perc, run_plays, pass_plays, penalties, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score)
 ```
 
 
@@ -104,6 +126,20 @@ drive_summary_data <- two_min_by_drive %>%
 
 drive_summary_data
 ```
+```{r}
+drive_summary_data$rusher[is.na(drive_summary_data$rusher)] <- 0
+drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <- 0
+
+
+```
+
+```{r}
+drive_summary_data %>%
+  select(game_id, passer, rusher, completion_perc)
+```
+
+
+
 
 ## Exploratory Work
 
@@ -200,7 +236,7 @@ lasso_recipe <- recipe(score ~ .,
   step_mutate_at(all_numeric(), 
                 fn = ~ as.numeric(.)) %>%
   step_dummy(all_nominal(), 
-             -all_outcomes(), -game_id, -drive_game_clock_start) #%>% 
+             -all_outcomes(), -game_id, -drive_game_clock_start, -passer, -rusher) #%>% 
   #step_normalize(all_predictors(), 
                  #-all_nominal(), -drive, -pass_tot_yds, -tot_yds)
 ```

@@ -85,7 +85,7 @@ two_min_new <- two_min_new[!is.na(two_min_new$passer), ]
 
 ```{r}
 two_min_new %>%
-  select(passer, game_id, rusher)
+  select(passer, game_id, rusher, ydsnet)
 ```
 
 
@@ -105,7 +105,7 @@ two_min_by_drive <-
      mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
             fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
             score = ifelse(td+fg==1, 1,0)) %>%
-    select(passer, pass_tot_yds, tot_yds, rush_yds_tot, rusher, completion_perc, run_plays, pass_plays, penalties, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score)
+    select(passer, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, rusher, completion_perc, run_plays, pass_plays, penalties, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score)
 ```
 
 
@@ -127,16 +127,44 @@ drive_summary_data <- two_min_by_drive %>%
 drive_summary_data
 ```
 ```{r}
-drive_summary_data$rusher[is.na(drive_summary_data$rusher)] <- 0
-drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <- 0
+drive_summary_data$rusher[is.na(drive_summary_data$rusher)] <- NA
+drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <- NA
 
 
 ```
 
 ```{r}
 drive_summary_data %>%
-  select(game_id, passer, rusher, completion_perc)
+  select(game_id, passer, rusher, completion_perc, game_week, week_num)
 ```
+
+* just QBR and QB, no rusher
+
+* join w QBR by passer from ben code
+
+* need third dataset
+
+* best of drives and total yards
+
+* break up of work ....
+
+* visualizations as intro w two min drill
+
+* lasso / rf model and boosting or interpretable ML global / local ???
+
+ -- logistic regression as primary -- predicting PERCENT OF SCORE
+ 
+ -- more lasso / rf / xg boost -- predicting SCORE using full model -- stacking? 
+ 
+ -- sep rmd for visualizations and modeling
+ 
+ * time left in half / game 
+ 
+ * Model = predictive 
+ 
+  -- two min drill w 40 sec w all these plays, what is likelihood of scoring????
+  
+*
 
 
 
@@ -177,6 +205,18 @@ drive_summary_data %>%
 
 
 1.  Exploring Data
+
+**Intro Visualizations**
+
+
+
+
+
+
+
+
+
+
 
 
 **Quant Vars**

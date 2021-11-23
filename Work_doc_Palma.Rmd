@@ -209,13 +209,29 @@ drive_summary_data %>%
 **Intro Visualizations**
 
 
+Completion Percentage 
+
+```{r}
+drive_summary_data %>%  
+  ggplot(aes(y = completion_perc, x = pass_tot_yds)) +
+  geom_point()
+```
+
+```{r}
+# qbr // score
+```
 
 
 
+```{r}
+# qbr // compl perc
+
+```
 
 
-
-
+```{r}
+# tot yds in drive (x) // amt of time left (ms drive gamenstart from ben code) (y) , score as color or facet
+```
 
 
 

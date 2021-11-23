@@ -41,7 +41,14 @@ library(patchwork)         # for combining plots nicely
 library(ranger)
 library(xgboost)
 library(dplyr)
+```
+
+
+```{r}
 pbp_2021 <- load_pbp(2021)
+nfl_qbr_weekly <- readr::read_csv("https://raw.githubusercontent.com/nflverse/espnscrapeR-data/master/data/qbr-nfl-weekly.csv")
+nfl_qbr_weekly<-nfl_qbr_weekly %>% 
+  filter(season==2021)
 ```
 
 
@@ -56,6 +63,37 @@ library(na.tools)
 
 ```
 
+```{r}
+Two_min_drill <- pbp_2021 %>% 
+  filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
+  
+Two_min_drill %>% 
+  group_by(game_id, drive) %>%
+  select(game_id, drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result, name, posteam, week, drive_start_yard_line) %>%
+  filter(game_id == "2021_01_ARI_TEN", drive==11) %>% 
+  mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
+  fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>%
+  mutate(yrds_to_go_start = ifelse(str_sub(drive_start_yard_line, 1, (str_locate(drive_start_yard_line, " ")-1))== posteam, 100-as.numeric(str_sub(drive_start_yard_line, (str_locate(drive_start_yard_line, " ")+1), length(drive_start_yard_line))), as.numeric(str_sub(drive_start_yard_line, (str_locate(drive_start_yard_line, " ")+1), length(drive_start_yard_line))))) %>% 
+  mutate(score= ifelse(td+fg==1, 1,0)) %>% 
+  right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb")) %>% 
+  select(!game_id.y)
+  # ggplot(aes(x= score, y=qbr_total))+
+  # geom_boxplot()+
+  # facet_wrap(vars(score))
+```
+
+
+```{r}
+Two_min_drill
+
+Two_min_drill %>% 
+  group_by(game_id, drive) %>%
+  mutate(rush_attempt = ifelse(is.na(rush_attempt), 0, rush_attempt)) %>% 
+  mutate(pass_attempt = ifelse(is.na(pass_attempt), 0, pass_attempt)) %>%
+  summarize(num_plays= n(), num_rush=sum(rush_attempt), num_pass= sum(pass_attempt)) %>%
+  
+```
+
 
 ```{r}
 two_min_drill <- pbp_2021 %>% 
@@ -66,6 +104,7 @@ two_min_new <- two_min_drill %>%
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
   fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
   score= ifelse(td+fg==1, 1,0)) %>%
+  right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb")) %>% 
   ungroup()
 
 ```
@@ -85,19 +124,19 @@ two_min_new <- two_min_new[!is.na(two_min_new$passer), ]
 
 ```{r}
 two_min_new %>%
-  select(passer, game_id, rusher, ydsnet)
+  select(passer, ydsnet, qbr_total, qbr_raw, game_id.x)
 ```
 
 
 ```{r}
 two_min_by_drive <- 
   two_min_new  %>%
-    group_by(drive, game_id) %>%
+    group_by(drive, game_id.x) %>%
     mutate(run_plays = sum(rush_attempt, na.rm = TRUE), 
            pass_plays = sum(pass_attempt, na.rm = TRUE), 
            pass_tot_yds = sum(air_yards, na.rm = TRUE), 
            completion_perc = (1- sum(incomplete_pass, na.rm = TRUE) / pass_plays), 
-           penalties = sum(penalty, na.rm = TRUE), 
+           #penalties = sum(penalty, na.rm = TRUE), 
            tot_yds = sum(yards_gained, na.rm = TRUE),
            rush_yds_tot = sum(rushing_yards, na.rm = TRUE)) %>% 
            #rusher = as.character(rusher),
@@ -105,7 +144,7 @@ two_min_by_drive <-
      mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
             fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
             score = ifelse(td+fg==1, 1,0)) %>%
-    select(passer, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, rusher, completion_perc, run_plays, pass_plays, penalties, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score)
+    select(passer, qbr_raw, qbr_total, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, rusher, completion_perc, run_plays, pass_plays, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score)
 ```
 
 
@@ -115,8 +154,8 @@ two_min_by_drive
 
 ```{r}
 drive_summary_data <- two_min_by_drive %>%
- arrange(game_id, drive) %>% 
- group_by(game_id) %>% 
+ arrange(game_id.x, drive) %>% 
+ group_by(game_id.x) %>% 
   mutate(
     td = as.factor(td), 
     fg = as.factor(fg), 
@@ -135,10 +174,8 @@ drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <-
 
 ```{r}
 drive_summary_data %>%
-  select(game_id, passer, rusher, completion_perc, game_week, week_num)
+  select(game_id.x, passer, rusher, completion_perc)
 ```
-
-* just QBR and QB, no rusher
 
 * join w QBR by passer from ben code
 
@@ -209,16 +246,28 @@ drive_summary_data %>%
 **Intro Visualizations**
 
 
-Completion Percentage 
-
-```{r}
-drive_summary_data %>%  
-  ggplot(aes(y = completion_perc, x = pass_tot_yds)) +
-  geom_point()
-```
-
 ```{r}
 # qbr // score
+
+drive_summary_data %>%  
+  ggplot(aes(x = qbr_total, y = score)) +
+  geom_boxplot()
+
+drive_summary_data %>%  
+  ggplot(aes(x = qbr_total)) +
+  geom_histogram(bins = 40) +
+  geom_vline(data = filter(drive_summary_data, score=="0"), aes(xintercept= mean(qbr_total)), colour="blue") +
+  geom_vline(data = filter(drive_summary_data, score=="1"), aes(xintercept= mean(qbr_total)), colour="blue") +
+  facet_wrap(~score) 
+
+drive_summary_data %>%  
+  ggplot(aes(x = qbr_total)) +
+  geom_freqpoly(bins = 40) + 
+  geom_vline(data = filter(drive_summary_data, score=="0"), aes(xintercept= mean(qbr_total)), colour="blue") +
+  geom_vline(data = filter(drive_summary_data, score=="1"), aes(xintercept= mean(qbr_total)), colour="blue") +
+  facet_wrap(~score) 
+
+
 ```
 
 
@@ -226,11 +275,67 @@ drive_summary_data %>%
 ```{r}
 # qbr // compl perc
 
+drive_summary_data %>%
+   ggplot(aes(x = completion_perc)) +
+   geom_histogram(bins = 15)
+
+ drive_summary_data %>%
+   ggplot(aes(x = qbr_total, y = completion_perc)) +
+   geom_point()
+
+ drive_summary_data %>%
+   ggplot(aes(x = qbr_total, y = completion_perc)) +
+   geom_smooth()
+
+q <- seq(0.1, 0.9, by = 0.1)
+
+drive_summary_data %>%  
+  ggplot(aes(x = qbr_total, y = completion_perc)) +
+  geom_quantile(quantiles = q)
 ```
+
+```{r}
+
+drive_summary_data <- 
+  drive_summary_data %>%
+  mutate(drive_game_clock_start = as.double(drive_game_clock_start, na.rm = TRUE))
+  
+```
+
+```{r}
+typeof(drive_summary_data$drive_game_clock_start)
+```
+
 
 
 ```{r}
 # tot yds in drive (x) // amt of time left (ms drive gamenstart from ben code) (y) , score as color or facet
+
+# game time var = drive_game_clock_start
+
+drive_summary_data %>%
+   ggplot(aes(x = tot_yds)) +
+   geom_histogram(bins = 30)
+
+drive_summary_data %>%
+   ggplot(aes(x = drive_game_clock_start)) +
+   geom_histogram(bins = 30)
+
+ drive_summary_data %>%
+   ggplot(aes(y = tot_yds, x = drive_game_clock_start)) +
+   geom_point()
+
+ drive_summary_data %>%
+   ggplot(aes(x = qbr_total, y = completion_perc)) +
+   geom_smooth()
+
+q <- seq(0.1, 0.9, by = 0.1)
+
+drive_summary_data %>%  
+  ggplot(aes(x = qbr_total, y = completion_perc)) +
+  geom_quantile(quantiles = q)
+
+
 ```
 
 

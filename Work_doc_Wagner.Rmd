@@ -32,6 +32,7 @@ library(tidyverse)
 library(ggplot2)
 library(ggrepel)
 library(lubridate)
+library(stringr)
 pbp_2021 <- load_pbp(2021)
 nfl_qbr_weekly <- readr::read_csv("https://raw.githubusercontent.com/nflverse/espnscrapeR-data/master/data/qbr-nfl-weekly.csv")
 nfl_qbr_weekly<-nfl_qbr_weekly %>% 
@@ -44,15 +45,17 @@ Two_min_drill <- pbp_2021 %>%
   
 Two_min_drill %>% 
   group_by(game_id, drive) %>%
-  select(drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result, name, posteam, week) %>%
+  select(game_id, drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result, name, posteam, week, drive_start_yard_line) %>%
+  filter(game_id == "2021_01_ARI_TEN", drive==11) %>% 
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
-  fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>% 
+  fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>%
+  mutate(yrds_to_go_start = ifelse(str_sub(drive_start_yard_line, 1, (str_locate(drive_start_yard_line, " ")-1))== posteam, 100-as.numeric(str_sub(drive_start_yard_line, (str_locate(drive_start_yard_line, " ")+1), length(drive_start_yard_line))), as.numeric(str_sub(drive_start_yard_line, (str_locate(drive_start_yard_line, " ")+1), length(drive_start_yard_line))))) %>% 
   mutate(score= ifelse(td+fg==1, 1,0)) %>% 
   right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb")) %>% 
-  select(!game_id.y) %>% 
-  ggplot(aes(x= score, y=qbr_total))+
-  geom_boxplot()+
-  facet_wrap(vars(score))
+  select(!game_id.y)
+  # ggplot(aes(x= score, y=qbr_total))+
+  # geom_boxplot()+
+  # facet_wrap(vars(score))
 
 ```
 

@@ -34,24 +34,22 @@ library(ggrepel)
 library(lubridate)
 library(stringr)
 library(readr)
-pbp_2021 <- load_pbp(2021)
+pbp_2018_2021 <- load_pbp(2018:2021)
 nfl_qbr_weekly <- readr::read_csv("https://raw.githubusercontent.com/nflverse/espnscrapeR-data/master/data/qbr-nfl-weekly.csv")
 nfl_qbr_weekly<-nfl_qbr_weekly %>% 
-  filter(season==2021)
+  filter(season==2018:2021)
 ```
 
 ```{r}
-Two_min_drill <- pbp_2021 %>% 
+Two_min_drill <- pbp_2018_2021 %>% 
   filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
   
 Two_min_drill %>% 
   group_by(game_id, drive) %>%
   select(game_id, drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result, name, posteam, week, drive_start_yard_line, wp) %>%
-  filter(game_id == "2021_01_ARI_TEN", drive==11) %>% 
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
   fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>%
-  mutate(yards_to_go_start= ifelse(str_extract(drive_start_yard_line, "[A-Z]+")== posteam, 100- parse_number(drive_start_yard_line), parse_number(drive_start_yard_line))) %>% 
-  mutate(yards_to_go_start= parse_character(drive_start_line, na = c("", "NA"))) %>% 
+  #mutate(yards_to_go_start= ifelse(str_extract(drive_start_yard_line, "[A-Z]+")== posteam, 100- parse_number(drive_start_yard_line), parse_number(drive_start_yard_line))) %>% 
   mutate(score= ifelse(td+fg==1, 1,0)) %>% 
   right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb")) %>% 
   select(!game_id.y)
@@ -70,5 +68,75 @@ Two_min_drill %>%
   mutate(pass_attempt = ifelse(is.na(pass_attempt), 0, pass_attempt)) %>%
   summarize(num_plays= n(), num_rush=sum(rush_attempt), num_pass= sum(pass_attempt))
   
+```
+```{r}
+two_min_new <- Two_min_drill %>% 
+  group_by(game_id, drive) %>%
+  mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
+  fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
+  score= ifelse(td+fg==1, 1,0)) %>%
+  right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb")) %>% 
+  ungroup()
+
+two_min_new
+```
+
+```{r}
+getmode <- function(v) {
+    v <- na.rm()
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+```
+
+
+```{r}
+two_min_new <- two_min_new[!is.na(two_min_new$passer), ] 
+```
+
+```{r}
+two_min_new %>%
+  select(passer, ydsnet, qbr_total, qbr_raw, game_id.x)
+```
+
+```{r}
+two_min_by_drive <- 
+  two_min_new  %>%
+    group_by(drive, game_id.x) %>%
+    mutate(run_plays = sum(rush_attempt, na.rm = TRUE), 
+           pass_plays = sum(pass_attempt, na.rm = TRUE), 
+           pass_tot_yds = sum(air_yards, na.rm = TRUE), 
+           completion_perc = (1- sum(incomplete_pass, na.rm = TRUE) / pass_plays), 
+           #penalties = sum(penalty, na.rm = TRUE), 
+           tot_yds = sum(yards_gained, na.rm = TRUE),
+           rush_yds_tot = sum(rushing_yards, na.rm = TRUE)) %>% 
+           #rusher = as.character(rusher),
+           #rusher = ifelse( is.na(rusher) == TRUE, getmode(rusher), rusher)) %>% 
+     mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
+            fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
+            score = ifelse(td+fg==1, 1,0)) %>%
+    select(passer, qbr_raw, qbr_total, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, rusher, completion_perc, run_plays, pass_plays, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score, posteam, drive_start_yard_line) %>% 
+  mutate(yards_to_go_start= ifelse(str_extract(drive_start_yard_line, "[A-Z]+")== posteam, 100- parse_number(drive_start_yard_line), parse_number(drive_start_yard_line))) 
+```
+
+```{r}
+drive_summary_data <- two_min_by_drive %>%
+ arrange(game_id.x, drive) %>% 
+ group_by(game_id.x) %>% 
+  mutate(
+    td = as.factor(td), 
+    fg = as.factor(fg), 
+    score = as.factor(score)
+  ) %>%
+ summarise_all(last)
+
+drive_summary_data
+```
+
+```{r}
+drive_summary_data %>%
+  group_by(passer) %>% 
+  summarize(num_successful= sum(score==1)) %>% 
+  arrange(desc(num_successful))
 ```
 

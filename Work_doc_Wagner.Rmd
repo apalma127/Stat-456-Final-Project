@@ -21,8 +21,8 @@ Thursday 12/16: Submit "behind-the-scenes" (you can always submit early, if you'
 
 
 ```{r}
-install.packages("nflfastR")
-install.packages("nflreadr")
+#install.packages("nflfastR")
+#install.packages("nflreadr")
 ```
 
 ```{r}
@@ -34,6 +34,8 @@ library(ggrepel)
 library(lubridate)
 library(stringr)
 library(readr)
+library(ggimage)
+
 pbp_2018_2021 <- load_pbp(2018:2021)
 nfl_qbr_weekly <- readr::read_csv("https://raw.githubusercontent.com/nflverse/espnscrapeR-data/master/data/qbr-nfl-weekly.csv")
 nfl_qbr_weekly<-nfl_qbr_weekly %>% 
@@ -96,7 +98,7 @@ two_min_new <- two_min_new[!is.na(two_min_new$passer), ]
 
 ```{r}
 two_min_new %>%
-  select(passer, ydsnet, qbr_total, qbr_raw, game_id.x)
+  select(passer, ydsnet, qbr_total, qbr_raw, game_id.x, headshot_href)
 ```
 
 ```{r}
@@ -115,7 +117,7 @@ two_min_by_drive <-
      mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
             fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
             score = ifelse(td+fg==1, 1,0)) %>%
-    select(passer, qbr_raw, qbr_total, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, rusher, completion_perc, run_plays, pass_plays, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score, posteam, drive_start_yard_line) %>% 
+    select(passer, qbr_raw, qbr_total, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, rusher, completion_perc, run_plays, pass_plays, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score, posteam, drive_start_yard_line, headshot_href) %>% 
   mutate(yards_to_go_start= ifelse(str_extract(drive_start_yard_line, "[A-Z]+")== posteam, 100- parse_number(drive_start_yard_line), parse_number(drive_start_yard_line))) 
 ```
 
@@ -130,13 +132,25 @@ drive_summary_data <- two_min_by_drive %>%
   ) %>%
  summarise_all(last)
 
-drive_summary_data
+drive_summary_data <- drive_summary_data %>% 
+  mutate(passer= replace(passer, passer=="Aa.Rodgers", "A.Rodgers"))
 ```
 
 ```{r}
 drive_summary_data %>%
   group_by(passer) %>% 
-  summarize(num_successful= sum(score==1)) %>% 
-  arrange(desc(num_successful))
+  summarize(num_successful= sum(score==1), num_2min_drives= n(), success_perc= num_successful/num_2min_drives, headshot=unique(headshot_href)) %>%
+  slice(1) %>% 
+  arrange(desc(num_successful)) %>%  
+  ggplot(aes(x=num_2min_drives, y= num_successful))+
+  geom_text_repel(aes(label=passer)) +
+  geom_image(aes(image= headshot), size=0.05, asp= 16/9)+
+  labs(x= "Number of 2-minute drill drives",
+       y= "Number of Successfull 2-minute drill drives",
+       title= "Every QB 2-Minute Drill Efficiency from 2018-2021",
+       caption = "Data: @nflfastR")+
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 8)) +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 15))+
+  theme_bw()
 ```
 

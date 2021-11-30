@@ -63,7 +63,7 @@ library(na.tools)
 
 ```
 
-```{r}
+```{r, eval=FALSE}
 Two_min_drill <- pbp_2021 %>% 
   filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
   
@@ -73,7 +73,7 @@ Two_min_drill %>%
   filter(game_id == "2021_01_ARI_TEN", drive==11) %>% 
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
   fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>%
-  mutate(yrds_to_go_start = ifelse(str_sub(drive_start_yard_line, 1, (str_locate(drive_start_yard_line, " ")-1))== posteam, 100-as.numeric(str_sub(drive_start_yard_line, (str_locate(drive_start_yard_line, " ")+1), length(drive_start_yard_line))), as.numeric(str_sub(drive_start_yard_line, (str_locate(drive_start_yard_line, " ")+1), length(drive_start_yard_line))))) %>% 
+  #mutate(yrds_to_go_start = ifelse(str_sub(drive_start_yard_line, 1, (str_locate(drive_start_yard_line, " ")-1))== posteam, 100-as.numeric(str_sub(drive_start_yard_line, (str_locate(drive_start_yard_line, " ")+1), length(drive_start_yard_line))), as.numeric(str_sub(drive_start_yard_line, (str_locate(drive_start_yard_line, " ")+1), length(drive_start_yard_line))))) %>% 
   mutate(score= ifelse(td+fg==1, 1,0)) %>% 
   right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb")) %>% 
   select(!game_id.y)
@@ -90,7 +90,7 @@ Two_min_drill %>%
   group_by(game_id, drive) %>%
   mutate(rush_attempt = ifelse(is.na(rush_attempt), 0, rush_attempt)) %>% 
   mutate(pass_attempt = ifelse(is.na(pass_attempt), 0, pass_attempt)) %>%
-  summarize(num_plays= n(), num_rush=sum(rush_attempt), num_pass= sum(pass_attempt)) %>%
+  summarize(num_plays= n(), num_rush=sum(rush_attempt), num_pass= sum(pass_attempt))
   
 ```
 
@@ -129,7 +129,7 @@ two_min_new %>%
 
 
 ```{r}
-two_min_by_drive <- 
+two_min_test <- 
   two_min_new  %>%
     group_by(drive, game_id.x) %>%
     mutate(run_plays = sum(rush_attempt, na.rm = TRUE), 
@@ -144,11 +144,16 @@ two_min_by_drive <-
      mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
             fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
             score = ifelse(td+fg==1, 1,0)) %>%
-    select(passer, qbr_raw, qbr_total, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, rusher, completion_perc, run_plays, pass_plays, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score)
+    select(passer, qbr_raw, qbr_total, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, completion_perc, run_plays, pass_plays, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score, posteam, drive_start_yard_line)
 ```
 
 
 ```{r}
+two_min_by_drive <-
+  two_min_test %>%
+    mutate(yards_to_go_start= ifelse(str_extract(drive_start_yard_line, "[A-Z]+")== posteam, 100- parse_number(drive_start_yard_line), parse_number(drive_start_yard_line))) 
+  
+
 two_min_by_drive
 ```
 
@@ -159,35 +164,24 @@ drive_summary_data <- two_min_by_drive %>%
   mutate(
     td = as.factor(td), 
     fg = as.factor(fg), 
-    score = as.factor(score)
-  ) %>%
+    score = as.factor(score),
+    drive_game_clock_start = as.numeric(ms(drive_game_clock_start))
+    ) %>%
  summarise_all(last)
 
 drive_summary_data
 ```
-```{r}
-drive_summary_data$rusher[is.na(drive_summary_data$rusher)] <- NA
-drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <- NA
-
-
-```
 
 ```{r}
 drive_summary_data %>%
-  select(game_id.x, passer, rusher, completion_perc)
+  select(game_id.x, passer, drive_game_clock_start, completion_perc, yards_to_go_start)
 ```
-
-* join w QBR by passer from ben code
 
 * need third dataset
 
 * best of drives and total yards
 
-* break up of work ....
 
-* visualizations as intro w two min drill
-
-* lasso / rf model and boosting or interpretable ML global / local ???
 
  -- logistic regression as primary -- predicting PERCENT OF SCORE
  
@@ -201,44 +195,11 @@ drive_summary_data %>%
  
   -- two min drill w 40 sec w all these plays, what is likelihood of scoring????
   
-*
 
 
 
 
 ## Exploratory Work
-
-
-
-```{r}
-drive_summary_data %>%
-  count(game_id)
-```
-
-```{r}
-drive_summary_data %>%
-  count(drive)
-```
-
-```{r}
-drive_summary_data %>%
-  count(completion_perc)
-```
-
-```{r}
-drive_summary_data %>%
-  count(td)
-```
-
-```{r}
-drive_summary_data %>%
-  count(fg)
-```
-
-```{r}
-drive_summary_data %>%
-  count(score)
-```
 
 
 1.  Exploring Data
@@ -294,18 +255,6 @@ drive_summary_data %>%
   geom_quantile(quantiles = q)
 ```
 
-```{r}
-
-drive_summary_data <- 
-  drive_summary_data %>%
-  mutate(drive_game_clock_start = as.double(drive_game_clock_start, na.rm = TRUE))
-  
-```
-
-```{r}
-typeof(drive_summary_data$drive_game_clock_start)
-```
-
 
 
 ```{r}
@@ -356,50 +305,61 @@ drive_summary_data %>%
 
 ```
 
-**Categorical**
+
+# Lasso Logisitic Regression 
 
 ```{r}
-drive_summary_data %>%
-select(where(is.character)) %>% 
-  pivot_longer(cols = everything(),
-               names_to = "variable", 
-               values_to = "value") %>% 
-  ggplot(aes(x = value)) +
-  geom_bar() +
-  facet_wrap(vars(variable), 
-             scales = "free", 
-             nrow = 3)
+library(dplyr)       # for data manipulation (dplyr) 
+library(broom)       # for making model summary tidy
+library(visreg)      # for plotting logodds and probability 
+library(margins)     # to calculate Average Marginal Effects
+library(ROCR)  
 ```
 
-2.  Training / Testing 
+```{r}
+drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <- 0
+```
 
 
 ```{r}
+drive_summary_data <- 
+  drive_summary_data %>%
+  select( -posteam, -drive_start_yard_line, -td, -fg)
+  #select(-game_id.x, -posteam, -drive_start_yard_line, -td, -fg)
+
+```
+
+
+
+```{r}
+
 set.seed(2)
 
 drive_two_min_split <- initial_split(drive_summary_data, 
-                             prop = .75, strata = "score")
+                             prop = .75, strata = score)
 
 drive_two_min_training <- training(drive_two_min_split)
 drive_two_min_testing <- testing(drive_two_min_split)
+
+
 ```
 
 
 3. Set up the recipe and the pre-processing steps to build a lasso model
+
+
 
 ```{r}
 set.seed(2)
 
 lasso_recipe <- recipe(score ~ ., 
                        data = drive_two_min_training) %>% 
-  step_upsample(score, over_ratio = 0.5) %>%
-  step_downsample(score, under_ratio = 1) %>%
-  step_mutate_at(all_numeric(), 
-                fn = ~ as.numeric(.)) %>%
+  step_upsample(score, over_ratio = 1) %>%
   step_dummy(all_nominal(), 
-             -all_outcomes(), -game_id, -drive_game_clock_start, -passer, -rusher) #%>% 
-  #step_normalize(all_predictors(), 
-                 #-all_nominal(), -drive, -pass_tot_yds, -tot_yds)
+             -all_outcomes()) %>%
+  step_normalize(all_predictors(), 
+                 -all_outcomes())
+
 ```
 
 
@@ -408,6 +368,11 @@ lasso_recipe %>%
   prep(drive_two_min_training) %>%
   juice() 
 ```
+
+```{r}
+table(drive_two_min_training$score, useNA = "always")
+```
+
 
 
 # Lasso Model and WF
@@ -428,9 +393,11 @@ lasso_wf <-  workflow() %>%
 # More Lasso Set up
 
 ```{r}
-set.seed(2) #for reproducible 5-fold
-drive_two_min_cv <- vfold_cv(drive_two_min_training, v = 5)
 
+set.seed(2) #for reproducible 5-fold
+val_split <- validation_split(drive_two_min_training, 
+                              prop = .6)
+val_split
 
 penalty_grid <- grid_regular(penalty(),
                              levels = 10)
@@ -440,7 +407,7 @@ ctrl_grid <- control_stack_grid()
 lasso_tune <-  
   lasso_wf %>% 
   tune_grid(
-    resamples = drive_two_min_cv,
+    resamples = val_split,
     grid = penalty_grid,
     control = ctrl_grid)
 
@@ -449,6 +416,31 @@ lasso_tune %>%
   unnest(.metrics) %>% 
   filter(.metric == "accuracy")
 ```
+
+
+- **ADD MORE YEARS...** -- 2018 - 2021 -- just validation -- 1k points or more for cv 
+
+- try other methods 
+
+- use historical data and leave out 2020 as TESTING!
+
+- such small data set, take time investigating where predicting well....
+
+
+- residual plot to investigate and make sure not predicting majority class
+
+- check and make sure success isnn't already in set
+
+- look at predicted probabilities of scoring vs if they scored or not -- density plot usually but because so few points, need another approach ... say a table?
+
+- try different types of models if predicts majority class...
+
+- try decision tree??? 
+
+
+
+
+
 
 ```{r}
 lasso_tune %>% 
@@ -481,46 +473,7 @@ lasso_tune %>%
   select_best(metric = "accuracy")
 ```
 
-# RF WORK
 
-```{r}
-set.seed(2)
-
-rf_recipe <-  
-  recipe(score ~ ., 
-        data = drive_two_min_training) %>% 
-  step_upsample(score, over_ratio = 0.5) %>%
-  step_downsample(score, under_ratio = 1) %>%
-  step_mutate_at(all_numeric(), 
-                fn = ~ as.numeric(.))
-```
-
-```{r}
-rf_model <- rand_forest(mtry = tune(), 
-              min_n = tune(), 
-              trees = 100) %>% 
-  set_mode("classification") %>% 
-  set_engine("ranger")
-
-rf_workflow <- workflow() %>% 
-  add_recipe(rf_recipe) %>% 
-  add_model(rf_model) 
-```
-
-```{r}
-rf_penalty_grid <- grid_regular(
-  finalize(mtry(), drive_two_min_training %>% select(-score)),
-  min_n(),
-  levels = 3)
-
-
-rf_tune <- 
-  rf_workflow %>% 
-  tune_grid(
-    resamples = drive_two_min_cv, 
-    grid = rf_penalty_grid, 
-    control = control_stack_grid())
-```
 
 ```{r}
 rf_tune %>%

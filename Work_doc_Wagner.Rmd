@@ -51,13 +51,9 @@ Two_min_drill %>%
   select(game_id, drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result, name, posteam, week, drive_start_yard_line, wp) %>%
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
   fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>%
-  #mutate(yards_to_go_start= ifelse(str_extract(drive_start_yard_line, "[A-Z]+")== posteam, 100- parse_number(drive_start_yard_line), parse_number(drive_start_yard_line))) %>% 
-  mutate(score= ifelse(td+fg==1, 1,0)) %>% 
-  right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb")) %>% 
-  select(!game_id.y)
-  # ggplot(aes(x= score, y=qbr_total))+
-  # geom_boxplot()+
-  # facet_wrap(vars(score))
+  mutate(score= ifelse(td+fg==1, 1,0))  
+  #right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb", "passer_player_name" = "name_short")) %>% 
+  #select(!game_id.y)
 
 ```
 
@@ -77,7 +73,7 @@ two_min_new <- Two_min_drill %>%
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
   fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
   score= ifelse(td+fg==1, 1,0)) %>%
-  right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb")) %>% 
+  right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb", "season" = "season")) %>% 
   ungroup()
 
 two_min_new
@@ -139,9 +135,10 @@ drive_summary_data <- drive_summary_data %>%
 ```{r}
 drive_summary_data %>%
   group_by(passer) %>% 
-  summarize(num_successful= sum(score==1), num_2min_drives= n(), success_perc= num_successful/num_2min_drives, headshot=unique(headshot_href)) %>%
+  summarize(num_successful= sum(score==1), num_2min_drives= n(), success_perc= num_successful/num_2min_drives, headshot=headshot_href) %>%
+  arrange(desc(num_successful)) %>% 
   slice(1) %>% 
-  arrange(desc(num_successful)) %>%  
+      
   ggplot(aes(x=num_2min_drives, y= num_successful))+
   geom_text_repel(aes(label=passer)) +
   geom_image(aes(image= headshot), size=0.05, asp= 16/9)+

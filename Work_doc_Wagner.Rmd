@@ -158,7 +158,9 @@ drive_summary_data %>%
   labs(x="Total QBR for that week",
        y= "Current Winning Percentage during the Drive",
        title = "Does scoring(TD or FG) on a 2-Minute Drill Drive increase Win Percentage?",
-       caption = "Data: @nflfastR")
+       caption = "Data: @nflfastR",
+       color= "Scored?")+
+  scale_color_manual(labels = c("No", "Yes"), values = c("blue", "red"))
   
 ```
 

@@ -8,10 +8,6 @@ output: html_document
 
 For the projects, I want to give some suggested due dates:
 
-Friday 11/19: 3. Outline of analysis plan with some of the steps completed.
-
-Tuesday 11/23: 1. Read in and clean other two sources of data. 2. Finish a couple of the analysis steps and write them up completely. I recommend focusing on the "final product" first. 3. Create an RMarkdown file for the "behind-the-scenes" report and be sure to keep track of any detailed explanations of methods and code there. 
-
 Thursday 12/2: 1. Complete most of the analyses and have a draft of the "final product". 2. Begin creating a presentation. 3. Create a detailed outline of what will go in the "behind-the-scenes". 
 
 Tuesday 12/7: 1. "Final product" complete. 2. Finish the 15 minute presentation and practice it with your group. 
@@ -45,10 +41,10 @@ library(dplyr)
 
 
 ```{r}
-pbp_2021 <- load_pbp(2021)
+pbp_2018_2021 <- load_pbp(2018:2021)
 nfl_qbr_weekly <- readr::read_csv("https://raw.githubusercontent.com/nflverse/espnscrapeR-data/master/data/qbr-nfl-weekly.csv")
 nfl_qbr_weekly<-nfl_qbr_weekly %>% 
-  filter(season==2021)
+  filter(season==2018:2021)
 ```
 
 
@@ -63,8 +59,8 @@ library(na.tools)
 
 ```
 
-```{r, eval=FALSE}
-Two_min_drill <- pbp_2021 %>% 
+```{r}
+Two_min_drill <- pbp_2018_2021 %>% 
   filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
   
 Two_min_drill %>% 
@@ -86,17 +82,12 @@ Two_min_drill %>%
 ```{r}
 Two_min_drill
 
-Two_min_drill %>% 
-  group_by(game_id, drive) %>%
-  mutate(rush_attempt = ifelse(is.na(rush_attempt), 0, rush_attempt)) %>% 
-  mutate(pass_attempt = ifelse(is.na(pass_attempt), 0, pass_attempt)) %>%
-  summarize(num_plays= n(), num_rush=sum(rush_attempt), num_pass= sum(pass_attempt))
   
 ```
 
 
 ```{r}
-two_min_drill <- pbp_2021 %>% 
+two_min_drill <- pbp_2018_2021 %>% 
   filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
   
 two_min_new <- two_min_drill %>% 
@@ -136,11 +127,8 @@ two_min_test <-
            pass_plays = sum(pass_attempt, na.rm = TRUE), 
            pass_tot_yds = sum(air_yards, na.rm = TRUE), 
            completion_perc = (1- sum(incomplete_pass, na.rm = TRUE) / pass_plays), 
-           #penalties = sum(penalty, na.rm = TRUE), 
            tot_yds = sum(yards_gained, na.rm = TRUE),
            rush_yds_tot = sum(rushing_yards, na.rm = TRUE)) %>% 
-           #rusher = as.character(rusher),
-           #rusher = ifelse( is.na(rusher) == TRUE, getmode(rusher), rusher)) %>% 
      mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
             fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
             score = ifelse(td+fg==1, 1,0)) %>%
@@ -171,6 +159,13 @@ drive_summary_data <- two_min_by_drive %>%
 
 drive_summary_data
 ```
+
+```{r}
+drive_summary_data$yards_to_go_start[is.na(drive_summary_data$yards_to_go_start)] <- 50
+
+```
+
+
 
 ```{r}
 drive_summary_data %>%
@@ -324,11 +319,9 @@ drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <-
 ```{r}
 drive_summary_data <- 
   drive_summary_data %>%
-  select( -posteam, -drive_start_yard_line, -td, -fg)
-  #select(-game_id.x, -posteam, -drive_start_yard_line, -td, -fg)
+  select( -posteam, -td, -fg, -game_id.x, -drive, -drive_start_yard_line)
 
 ```
-
 
 
 ```{r}
@@ -369,10 +362,17 @@ lasso_recipe %>%
   juice() 
 ```
 
+
+
+
 ```{r}
 table(drive_two_min_training$score, useNA = "always")
 ```
 
+
+```{r}
+library(glmnet)
+```
 
 
 # Lasso Model and WF
@@ -394,52 +394,31 @@ lasso_wf <-  workflow() %>%
 
 ```{r}
 
-set.seed(2) #for reproducible 5-fold
-val_split <- validation_split(drive_two_min_training, 
-                              prop = .6)
-val_split
+set.seed(2) 
+cv_split <- vfold_cv(drive_two_min_training, 
+                              v = 5)
+ctrl <- control_resamples(save_pred = TRUE)
+
+
 
 penalty_grid <- grid_regular(penalty(),
                              levels = 10)
 
-ctrl_grid <- control_stack_grid()
-
 lasso_tune <-  
   lasso_wf %>% 
   tune_grid(
-    resamples = val_split,
+    resamples = cv_split,
     grid = penalty_grid,
-    control = ctrl_grid)
+)
+
 
 lasso_tune %>% 
   select(id, .metrics) %>% 
   unnest(.metrics) %>% 
   filter(.metric == "accuracy")
+
+
 ```
-
-
-- **ADD MORE YEARS...** -- 2018 - 2021 -- just validation -- 1k points or more for cv 
-
-- try other methods 
-
-- use historical data and leave out 2020 as TESTING!
-
-- such small data set, take time investigating where predicting well....
-
-
-- residual plot to investigate and make sure not predicting majority class
-
-- check and make sure success isnn't already in set
-
-- look at predicted probabilities of scoring vs if they scored or not -- density plot usually but because so few points, need another approach ... say a table?
-
-- try different types of models if predicts majority class...
-
-- try decision tree??? 
-
-
-
-
 
 
 ```{r}
@@ -469,14 +448,243 @@ best_param
 
 
 ```{r}
-lasso_tune %>%
+best_param <- lasso_tune %>%
   select_best(metric = "accuracy")
+
+best_param
+```
+
+
+```{r}
+lasso_final_wf <- lasso_wf %>% 
+  finalize_workflow(best_param)
+lasso_final_wf
 ```
 
 
 
 ```{r}
-rf_tune %>%
-  select_best(metric = "accuracy")
+
+x <- model.matrix(score ~ .)
+
+lasso_final_mod <- lasso_final_wf %>% 
+  fit(data = drive_two_min_training)
+
+lasso_final_mod %>% 
+  pull_workflow_fit() %>% 
+  tidy() 
+```
+
+
+```{r}
+lasso_final_mod %>% 
+  pull_workflow_fit() %>% 
+  vip()
+```
+
+
+```{r}
+lasso_test <- lasso_final_wf %>% 
+  last_fit(cv_split)
+
+lasso_test %>% 
+  collect_metrics()
+```
+
+```{r}
+preds <-
+  collect_predictions(lasso_test) 
+conf_mat(preds, .pred_class, score)
+```
+
+
+```{r}
+lasso_preds <- collect_predictions(lasso_tune)
+
+```
+
+```{r}
+conf_mat(lasso_preds, truth = score,
+         estimate = .pred_class)
+```
+
+```{r}
+accuracy(lasso_preds, truth = score,
+         estimate = .pred_class)
+
+(2541+978)/(2541+978+703+430)
+```
+```{r}
+sens(lasso_preds, truth = score,
+         estimate = .pred_class)
+
+
+```
+**Ratio between how much classified as score to how much was actually a score**
+
+```{r}
+spec(lasso_preds, truth = score,
+         estimate = .pred_class)
+```
+**Ratio between how much classified as no score to how much was actually no score**
+
+```{r}
+precision(lasso_preds, truth = score,
+         estimate = .pred_class)
+```
+**How much were correctly classified as a score out of all scores?**
+
+
+```{r}
+f_meas(lasso_preds, truth = score,
+         estimate = .pred_class)
+```
+**The F1 score is about 0.818, which indicates that the trained model has a classification strength of 81.8%%.**
+
+
+```{r}
+custom_metrics <- metric_set(accuracy, sens, spec, precision, f_meas)
+
+custom_metrics(lasso_preds, truth = score,
+         estimate = .pred_class)
+```
+
+
+```{r}
+roc_auc(lasso_preds,
+        truth = score,
+        .pred_1)
+```
+
+**ROC-AUC is a performance measurement for the classification problem at various thresholds settings. ROC_AUC tells how much the model is capable of distinguishing between classes. The trained logistic regression model has a ROC-AUC of ______**
+
+```{r}
+lasso_preds %>%
+  roc_curve(truth = score, .pred_1) %>%
+  autoplot()
+```
+
+
+```{r}
+lasso_preds %>%
+  ggplot() +
+  geom_density(aes(x = .pred_1, fill = score), 
+               alpha = 0.5)
+```
+```{r}
+test_predictions <- rf_fit %>% pull(.predictions)
+test_predictions
+```
+
+
+
+```{r}
+lasso_final_wf <- lasso_wf %>% 
+  finalize_workflow(best_param)
+lasso_final_wf
+```
+
+
+```{r}
+lasso_final_mod <- lasso_final_wf %>% 
+  fit(data = drive_two_min_training)
+
+lasso_final_mod %>% 
+  pull_workflow_fit() %>% 
+  tidy() 
+```
+
+```{r}
+new_qb <- tribble(~pregnant, ~glucose, ~pressure, ~triceps, ~insulin, ~mass, ~pedigree, ~age,
+                     2, 95, 70, 31, 102, 28.2, 0.67, 47)
+new_qb
+```
+
+```{r}
+predict(lasso_final_wf, new_data = new_qb)
+
+```
+
+```{r}
+lasso_obj <- pull_workflow_fit(lasso_final_wf)$fit
+```
+
+
+
+- look at predicted probabilities of scoring vs if they scored or not -- density plot usually but because so few points, need another approach ... say a table?
+
+- try different types of models if predicts majority class...
+
+- try decision tree??? 
+
+
+# Decision Tree
+
+```{r}
+library(tidymodels) 
+library(tidyverse) # manipulating data
+library(skimr) # data visualization
+library(baguette) # bagged trees
+library(future) # parallel processing & decrease computation time
+library(xgboost) # boosted trees
+```
+
+```{r}
+
+set.seed(2)
+
+drive_two_min_split <- initial_split(drive_summary_data, 
+                             prop = .75, strata = score)
+
+drive_two_min_training <- training(drive_two_min_split)
+drive_two_min_testing <- testing(drive_two_min_split)
+
+cv_split <- vfold_cv(drive_two_min_training, 
+                              v = 5)
+```
+
+
+```{r}
+rf_recipe <- recipe(score ~ ., 
+                       data = drive_two_min_training) %>% 
+  step_upsample(score, over_ratio = 1) %>%
+  step_dummy(all_nominal(), 
+             -all_outcomes()) %>%
+  step_normalize(all_predictors(), 
+                 -all_outcomes())
+```
+
+
+```{r}
+set.seed(2)
+mod_rf <-rand_forest() %>%
+  set_engine("ranger",
+             num.threads = parallel::detectCores(), 
+             importance = "permutation", 
+             verbose = TRUE) %>% 
+  set_mode("classification") %>% 
+  set_args(trees = 1000)
+```
+
+```{r}
+wflow_rf <- workflow() %>% 
+  add_model(mod_rf) %>% 
+  add_recipe(rf_recipe)
+```
+
+
+
+```{r}
+set.seed(2)
+plan(multisession)
+
+fit_rf <- fit_resamples(
+  wflow_rf,
+  cv_split,
+  metrics = metric_set(accuracy),
+  control = control_resamples(verbose = TRUE,
+                              save_pred = TRUE,
+                              extract = function(x) x)
+)
 ```
 

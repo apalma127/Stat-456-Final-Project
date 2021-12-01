@@ -1,0 +1,46 @@
+---
+title: "Final Product"
+author: "Palma"
+date: "11/30/2021"
+output: html_document
+---
+
+# Intro to the "Two Minute Drill"
+
+Show win probability .... what happens here that changes the outcome?
+
+Show QB face plots
+
+Show most successful plots
+
+What will we be modeling / looking into?
+
+# Intro Visualizations 
+
+3 - 4 intro visualizations investiagting interesting behavior....
+
+specifically ones that directly have impications upon the outcome (score?)
+
+# Modeling 
+
+- log regression
+
+What did we model
+Outcome
+What can we do with this
+How accurate is it
+Make predictions on new people....or real cfb situations
+
+Drawbacks / limitations
+
+- decision tree
+
+What did we model
+Outcome
+What can we do with this
+How accurate is it
+make predictions on new people... or real cfb situations
+
+Drawbacks / limitations
+
+# Conclusion 

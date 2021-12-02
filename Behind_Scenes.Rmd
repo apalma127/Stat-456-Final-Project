@@ -4,3 +4,5 @@ author: "Palma"
 date: "11/30/2021"
 output: html_document
 ---
+
+Paste in final product doc inclduing all code and detailed explanation

@@ -1,14 +1,14 @@
 ---
 title: "Work Doc - Palma"
 author: "Palma"
-date: "11/16/2021"
+date: "Thursday, December 16th, 2021"
 output: html_document
 ---
 
 
 For the projects, I want to give some suggested due dates:
 
-Thursday 12/2: 1. Complete most of the analyses and have a draft of the "final product". 2. Begin creating a presentation. 3. Create a detailed outline of what will go in the "behind-the-scenes". 
+Thursday 12/2: 1. Complete most of the analyses and have a draft of the "final product". 3. Create a detailed outline of what will go in the "behind-the-scenes". 
 
 Tuesday 12/7: 1. "Final product" complete. 2. Finish the 15 minute presentation and practice it with your group. 
 
@@ -25,6 +25,8 @@ library(ggplot2)
 library(ggrepel)
 library(stringr)
 library(lubridate)
+library(glmnet)
+
 
 library(tidymodels)        # for modeling
 library(themis)            # for step functions for unbalanced data
@@ -37,6 +39,10 @@ library(patchwork)         # for combining plots nicely
 library(ranger)
 library(xgboost)
 library(dplyr)
+
+library(skimr) # data visualization
+library(baguette) # bagged trees
+library(future) # parallel processing & decrease computation time
 ```
 
 
@@ -49,11 +55,6 @@ nfl_qbr_weekly<-nfl_qbr_weekly %>%
 
 
 ```{r}
-#devtools::install_github(repo = "ryurko/nflscrapR")
-```
-
-
-```{r}
 library(nflscrapR)
 library(na.tools)
 
@@ -62,20 +63,7 @@ library(na.tools)
 ```{r}
 Two_min_drill <- pbp_2018_2021 %>% 
   filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
-  
-Two_min_drill %>% 
-  group_by(game_id, drive) %>%
-  select(game_id, drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result, name, posteam, week, drive_start_yard_line) %>%
-  filter(game_id == "2021_01_ARI_TEN", drive==11) %>% 
-  mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
-  fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>%
-  #mutate(yrds_to_go_start = ifelse(str_sub(drive_start_yard_line, 1, (str_locate(drive_start_yard_line, " ")-1))== posteam, 100-as.numeric(str_sub(drive_start_yard_line, (str_locate(drive_start_yard_line, " ")+1), length(drive_start_yard_line))), as.numeric(str_sub(drive_start_yard_line, (str_locate(drive_start_yard_line, " ")+1), length(drive_start_yard_line))))) %>% 
-  mutate(score= ifelse(td+fg==1, 1,0)) %>% 
-  right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb")) %>% 
-  select(!game_id.y)
-  # ggplot(aes(x= score, y=qbr_total))+
-  # geom_boxplot()+
-  # facet_wrap(vars(score))
+
 ```
 
 
@@ -95,27 +83,15 @@ two_min_new <- two_min_drill %>%
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
   fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
   score= ifelse(td+fg==1, 1,0)) %>%
-  right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb")) %>% 
+  right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb", "season" = "season")) %>% 
   ungroup()
 
 ```
 
-```{r}
-getmode <- function(v) {
-    v <- na.rm()
-   uniqv <- unique(v)
-   uniqv[which.max(tabulate(match(v, uniqv)))]
-}
-```
-
-
-```{r}
-two_min_new <- two_min_new[!is.na(two_min_new$passer), ] 
-```
 
 ```{r}
 two_min_new %>%
-  select(passer, ydsnet, qbr_total, qbr_raw, game_id.x)
+  select(ydsnet, qbr_total, qbr_raw, game_id.x)
 ```
 
 
@@ -132,7 +108,7 @@ two_min_test <-
      mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
             fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
             score = ifelse(td+fg==1, 1,0)) %>%
-    select(passer, qbr_raw, qbr_total, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, completion_perc, run_plays, pass_plays, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score, posteam, drive_start_yard_line)
+    select(qbr_raw, qbr_total, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, completion_perc, run_plays, pass_plays, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score, posteam, drive_start_yard_line)
 ```
 
 
@@ -169,28 +145,8 @@ drive_summary_data$yards_to_go_start[is.na(drive_summary_data$yards_to_go_start)
 
 ```{r}
 drive_summary_data %>%
-  select(game_id.x, passer, drive_game_clock_start, completion_perc, yards_to_go_start)
+  select(game_id.x, drive_game_clock_start, completion_perc, yards_to_go_start)
 ```
-
-* need third dataset
-
-* best of drives and total yards
-
-
-
- -- logistic regression as primary -- predicting PERCENT OF SCORE
- 
- -- more lasso / rf / xg boost -- predicting SCORE using full model -- stacking? 
- 
- -- sep rmd for visualizations and modeling
- 
- * time left in half / game 
- 
- * Model = predictive 
- 
-  -- two min drill w 40 sec w all these plays, what is likelihood of scoring????
-  
-
 
 
 
@@ -313,6 +269,15 @@ library(ROCR)
 
 ```{r}
 drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <- 0
+
+```
+
+```{r}
+drive_summary_data$ydsnet[is.na(drive_summary_data$ydsnet)] <- 0
+drive_summary_data$drive_yards_penalized[is.na(drive_summary_data$drive_yards_penalized)] <- 0
+drive_summary_data$drive_game_clock_start[is.na(drive_summary_data$drive_game_clock_start)] <- 0
+drive_summary_data$score[is.na(drive_summary_data$score)] <- 0
+
 ```
 
 
@@ -321,6 +286,13 @@ drive_summary_data <-
   drive_summary_data %>%
   select( -posteam, -td, -fg, -game_id.x, -drive, -drive_start_yard_line)
 
+```
+
+
+```{r}
+drive_summary_data %>% 
+  add_n_miss() %>% 
+  count(n_miss_all)
 ```
 
 
@@ -339,6 +311,17 @@ drive_two_min_testing <- testing(drive_two_min_split)
 
 
 3. Set up the recipe and the pre-processing steps to build a lasso model
+
+
+```{r}
+drive_two_min_training %>% 
+  add_n_miss() %>% 
+  count(n_miss_all)
+```
+```{r}
+drive_two_min_training %>%
+count(score)
+```
 
 
 
@@ -363,18 +346,6 @@ lasso_recipe %>%
 ```
 
 
-
-
-```{r}
-table(drive_two_min_training$score, useNA = "always")
-```
-
-
-```{r}
-library(glmnet)
-```
-
-
 # Lasso Model and WF
 
 ```{r}
@@ -388,6 +359,7 @@ lasso_wf <-  workflow() %>%
   add_recipe(lasso_recipe) %>% 
   add_model(lasso_mod)
 
+lasso_wf
 ```
 
 # More Lasso Set up
@@ -397,20 +369,30 @@ lasso_wf <-  workflow() %>%
 set.seed(2) 
 cv_split <- vfold_cv(drive_two_min_training, 
                               v = 5)
-ctrl <- control_resamples(save_pred = TRUE)
 
 
 
 penalty_grid <- grid_regular(penalty(),
                              levels = 10)
 
+penalty_grid
+```
+
+```{r}
+
 lasso_tune <-  
   lasso_wf %>% 
   tune_grid(
     resamples = cv_split,
     grid = penalty_grid,
-)
+    control = control_stack_grid())
 
+
+
+
+```
+
+```{r}
 
 lasso_tune %>% 
   select(id, .metrics) %>% 
@@ -464,9 +446,6 @@ lasso_final_wf
 
 
 ```{r}
-
-x <- model.matrix(score ~ .)
-
 lasso_final_mod <- lasso_final_wf %>% 
   fit(data = drive_two_min_training)
 
@@ -485,11 +464,17 @@ lasso_final_mod %>%
 
 ```{r}
 lasso_test <- lasso_final_wf %>% 
-  last_fit(cv_split)
+  last_fit(drive_two_min_split)
 
 lasso_test %>% 
   collect_metrics()
 ```
+
+```{r}
+collect_predictions(lasso_test) 
+
+```
+
 
 ```{r}
 preds <-
@@ -499,44 +484,32 @@ conf_mat(preds, .pred_class, score)
 
 
 ```{r}
-lasso_preds <- collect_predictions(lasso_tune)
-
-```
-
-```{r}
-conf_mat(lasso_preds, truth = score,
+accuracy(preds, truth = score,
          estimate = .pred_class)
 ```
 
 ```{r}
-accuracy(lasso_preds, truth = score,
+sens(preds, truth = score,
          estimate = .pred_class)
-
-(2541+978)/(2541+978+703+430)
 ```
-```{r}
-sens(lasso_preds, truth = score,
-         estimate = .pred_class)
 
-
-```
 **Ratio between how much classified as score to how much was actually a score**
 
 ```{r}
-spec(lasso_preds, truth = score,
+spec(preds, truth = score,
          estimate = .pred_class)
 ```
 **Ratio between how much classified as no score to how much was actually no score**
 
 ```{r}
-precision(lasso_preds, truth = score,
+precision(preds, truth = score,
          estimate = .pred_class)
 ```
 **How much were correctly classified as a score out of all scores?**
 
 
 ```{r}
-f_meas(lasso_preds, truth = score,
+f_meas(preds, truth = score,
          estimate = .pred_class)
 ```
 **The F1 score is about 0.818, which indicates that the trained model has a classification strength of 81.8%%.**
@@ -545,89 +518,53 @@ f_meas(lasso_preds, truth = score,
 ```{r}
 custom_metrics <- metric_set(accuracy, sens, spec, precision, f_meas)
 
-custom_metrics(lasso_preds, truth = score,
+custom_metrics(preds, truth = score,
          estimate = .pred_class)
 ```
 
 
 ```{r}
-roc_auc(lasso_preds,
+roc_auc(preds,
         truth = score,
-        .pred_1)
+        .pred_0)
 ```
 
 **ROC-AUC is a performance measurement for the classification problem at various thresholds settings. ROC_AUC tells how much the model is capable of distinguishing between classes. The trained logistic regression model has a ROC-AUC of ______**
 
 ```{r}
-lasso_preds %>%
-  roc_curve(truth = score, .pred_1) %>%
+preds %>%
+  roc_curve(truth = score, .pred_0) %>%
   autoplot()
 ```
 
 
 ```{r}
-lasso_preds %>%
+preds %>%
   ggplot() +
-  geom_density(aes(x = .pred_1, fill = score), 
+  geom_density(aes(x = .pred_0, fill = score), 
                alpha = 0.5)
 ```
-```{r}
-test_predictions <- rf_fit %>% pull(.predictions)
-test_predictions
-```
-
 
 
 ```{r}
-lasso_final_wf <- lasso_wf %>% 
-  finalize_workflow(best_param)
-lasso_final_wf
-```
-
-
-```{r}
-lasso_final_mod <- lasso_final_wf %>% 
-  fit(data = drive_two_min_training)
-
-lasso_final_mod %>% 
-  pull_workflow_fit() %>% 
-  tidy() 
+drive_two_min_training
 ```
 
 ```{r}
-new_qb <- tribble(~pregnant, ~glucose, ~pressure, ~triceps, ~insulin, ~mass, ~pedigree, ~age,
-                     2, 95, 70, 31, 102, 28.2, 0.67, 47)
+new_qb <- tribble(~qbr_raw, ~qbr_total, ~pass_tot_yds, ~tot_yds, ~ydsnet, ~rush_yds_tot, ~completion_perc, ~run_plays, ~pass_plays, ~drive_yards_penalized, ~drive_game_clock_start, ~yards_to_go_start,
+                     70, 75, 50, 70, 80, 20, 0.6, 4, 7, 20, 115, 90)
 new_qb
 ```
 
 ```{r}
-predict(lasso_final_wf, new_data = new_qb)
+predict(lasso_final_mod, new_data = new_qb)
 
 ```
-
-```{r}
-lasso_obj <- pull_workflow_fit(lasso_final_wf)$fit
-```
-
-
-
-- look at predicted probabilities of scoring vs if they scored or not -- density plot usually but because so few points, need another approach ... say a table?
-
-- try different types of models if predicts majority class...
-
-- try decision tree??? 
 
 
 # Decision Tree
 
-```{r}
-library(tidymodels) 
-library(tidyverse) # manipulating data
-library(skimr) # data visualization
-library(baguette) # bagged trees
-library(future) # parallel processing & decrease computation time
-library(xgboost) # boosted trees
-```
+
 
 ```{r}
 
@@ -647,44 +584,140 @@ cv_split <- vfold_cv(drive_two_min_training,
 ```{r}
 rf_recipe <- recipe(score ~ ., 
                        data = drive_two_min_training) %>% 
-  step_upsample(score, over_ratio = 1) %>%
-  step_dummy(all_nominal(), 
-             -all_outcomes()) %>%
-  step_normalize(all_predictors(), 
-                 -all_outcomes())
+  step_upsample(score, over_ratio = 1) 
 ```
 
 
 ```{r}
 set.seed(2)
-mod_rf <-rand_forest() %>%
-  set_engine("ranger",
-             num.threads = parallel::detectCores(), 
-             importance = "permutation", 
-             verbose = TRUE) %>% 
+rf_model <- rand_forest(mtry = tune(), 
+              min_n = tune(), 
+              trees = 100) %>% 
   set_mode("classification") %>% 
-  set_args(trees = 1000)
+  set_engine("ranger")
 ```
 
 ```{r}
-wflow_rf <- workflow() %>% 
-  add_model(mod_rf) %>% 
-  add_recipe(rf_recipe)
+rf_workflow <- workflow() %>%
+  add_recipe(rf_recipe) %>%
+  add_model(rf_model) 
 ```
 
 
 
 ```{r}
+rf_penalty_grid <- grid_regular(
+  finalize(mtry(), drive_two_min_training %>% select(-score)),
+  min_n(),
+  levels = 3)
+
+
+rf_tune <- 
+  rf_workflow %>% 
+  tune_grid(
+    resamples = cv_split, 
+    grid = rf_penalty_grid, 
+    control = control_stack_grid())
+```
+
+```{r}
+rf_tune %>%
+  select_best(metric = "accuracy")
+```
+```{r}
+rf_tune %>%
+  collect_metrics(metric = "accuracy") %>%
+  filter(.config == "Preprocessor1_Model1")
+```
+
+
+
+
+# BOOSTED Tree
+
+```{r}
+xgboost_spec <-
+  boost_tree(
+    trees = 1000,
+    min_n = 5,
+    tree_depth = 2,
+    learn_rate = tune(),
+    loss_reduction = 10^-5,
+    sample_size = 1) %>%
+  set_mode("classification") %>%
+  set_engine("xgboost")
+
+xgboost_recipe <- recipe(formula = score ~ ., data = drive_two_min_training) %>%
+  step_upsample(score, over_ratio = 1) %>%
+  step_mutate_at(all_numeric(),
+                 fn = ~as.numeric(.)) %>%
+  step_novel(all_nominal_predictors()) %>%
+  step_dummy(all_nominal_predictors(), one_hot = TRUE) %>%
+  step_zv(all_predictors())
+
+xgboost_workflow <-
+  workflow() %>%
+  add_recipe(xgboost_recipe) %>%
+  add_model(xgboost_spec)
+
 set.seed(2)
-plan(multisession)
+registerDoParallel() 
 
-fit_rf <- fit_resamples(
-  wflow_rf,
-  cv_split,
-  metrics = metric_set(accuracy),
-  control = control_resamples(verbose = TRUE,
-                              save_pred = TRUE,
-                              extract = function(x) x)
-)
+boost_penalty_grid <- grid_regular(
+  learn_rate(),
+  levels = 10)
+
+boost_tune <- xgboost_workflow %>% 
+    tune_grid(
+    resamples = cv_split, 
+    grid = boost_penalty_grid, 
+    control = control_stack_grid())
+```
+
+
+```{r}
+boost_tune %>%
+  select_best(metric = "accuracy")
+```
+
+```{r}
+boost_tune %>%
+  collect_metrics(metric = "accuracy") %>%
+  filter(.config == "Preprocessor1_Model10")
+```
+
+# Comparison
+
+```{r}
+lasso_tune %>% 
+  collect_predictions() %>% 
+  group_by(id, penalty) %>% 
+  summarize(accuracy = sum((score == .pred_class))/n(),
+            true_neg_rate = sum(score == 0 & .pred_class == 0)/sum(score == 0),
+            true_pos_rate = sum(score == 1 & .pred_class == 1)/sum(score == 1)) %>% 
+  group_by(penalty) %>% 
+  summarize(across(accuracy:true_pos_rate, mean))
+```
+
+```{r}
+rf_tune %>% 
+  collect_predictions() %>% 
+  group_by(id, mtry, min_n) %>% 
+  summarize(accuracy = sum((score == .pred_class))/n(),
+            true_neg_rate = sum(score == 0 & .pred_class == 0)/sum(score == 0),
+            true_pos_rate = sum(score == 1 & .pred_class == 1)/sum(score == 1)) %>% 
+  group_by(mtry, min_n) %>% 
+  summarize(across(accuracy:true_pos_rate, mean))
+```
+
+```{r}
+boost_tune %>% 
+  collect_predictions() %>% 
+  group_by(id, learn_rate) %>% 
+  summarize(accuracy = sum((score == .pred_class))/n(),
+            true_neg_rate = sum(score == 0 & .pred_class == 0)/sum(score == 0),
+            true_pos_rate = sum(score == 1 & .pred_class == 1)/sum(score == 1)) %>% 
+  group_by(learn_rate) %>% 
+  summarize(across(accuracy:true_pos_rate, mean))
 ```
 

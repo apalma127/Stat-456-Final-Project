@@ -28,6 +28,9 @@ library(xgboost)
 library(kableExtra)
 library(expss)
 library(knitr)
+library(skimr)
+library(baguette) 
+library(future)
 ```
 
 ```{r}

@@ -17,7 +17,7 @@ What will we be modeling / looking into?
 
 # Intro Visualizations 
 
-3 - 4 intro visualizations investiagting interesting behavior....
+3 - 4 intro visualizations investigating interesting behavior....
 
 specifically ones that directly have impications upon the outcome (score?)
 
@@ -44,3 +44,7 @@ make predictions on new people... or real cfb situations
 Drawbacks / limitations
 
 # Conclusion 
+
+What did we uncover about two min drills?
+
+When are they more successful? When are they less? What vars are the most important?

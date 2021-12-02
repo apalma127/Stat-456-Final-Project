@@ -5,6 +5,38 @@ date: "11/30/2021"
 output: html_document
 ---
 
+```{r, error=FALSE}
+library(nflfastR)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(ggrepel)
+library(stringr)
+library(lubridate)
+library(tidymodels)        # for modeling
+library(themis)            # for step functions for unbalanced data
+library(doParallel)        # for parallel processing
+library(stacks)            # for stacking models
+library(naniar)            # for examining missing values (NAs)
+library(moderndive)        # for King County housing data
+library(vip)               # for variable importance plots
+library(patchwork)         # for combining plots nicely
+library(ranger)
+library(readr)
+library(ggimage)
+library(xgboost)
+library(kableExtra)
+library(expss)
+library(knitr)
+```
+
+```{r}
+pbp_2018_2021 <- load_pbp(2018:2021)
+nfl_qbr_weekly <- readr::read_csv("https://raw.githubusercontent.com/nflverse/espnscrapeR-data/master/data/qbr-nfl-weekly.csv")
+nfl_qbr_weekly<-nfl_qbr_weekly %>% 
+  filter(season==2018:2021)
+```
+
 # Intro to the "Two Minute Drill"
 
 Show win probability .... what happens here that changes the outcome?
@@ -20,6 +52,140 @@ What will we be modeling / looking into?
 3 - 4 intro visualizations investiagting interesting behavior....
 
 specifically ones that directly have impications upon the outcome (score?)
+
+```{r}
+Two_min_drill <- pbp_2018_2021 %>% 
+  filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
+  
+Two_min_drill %>% 
+  group_by(game_id, drive) %>%
+  select(game_id, drive_play_count, ydsnet, drive_game_clock_start, fixed_drive_result, name, posteam, week, drive_start_yard_line, wp) %>%
+  mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
+  fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>%
+  mutate(score= ifelse(td+fg==1, 1,0))
+
+```
+
+```{r}
+Two_min_drill
+
+Two_min_drill %>% 
+  group_by(game_id, drive) %>%
+  mutate(rush_attempt = ifelse(is.na(rush_attempt), 0, rush_attempt)) %>% 
+  mutate(pass_attempt = ifelse(is.na(pass_attempt), 0, pass_attempt)) %>%
+  summarize(num_plays= n(), num_rush=sum(rush_attempt), num_pass= sum(pass_attempt))
+  
+```
+```{r}
+two_min_new <- Two_min_drill %>% 
+  group_by(game_id, drive) %>%
+  mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
+  fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
+  score= ifelse(td+fg==1, 1,0)) %>%
+  right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb", "season" = "season")) %>% 
+  ungroup()
+```
+
+```{r}
+#two_min_new <- two_min_new[!is.na(two_min_new$passer), ] 
+```
+
+```{r}
+two_min_new %>%
+  select(passer, ydsnet, qbr_total, qbr_raw, game_id.x, headshot_href)
+```
+
+```{r}
+two_min_by_drive <- 
+  two_min_new  %>%
+    group_by(drive, game_id.x) %>%
+    mutate(run_plays = sum(rush_attempt, na.rm = TRUE), 
+           pass_plays = sum(pass_attempt, na.rm = TRUE), 
+           pass_tot_yds = sum(air_yards, na.rm = TRUE), 
+           completion_perc = (1- sum(incomplete_pass, na.rm = TRUE) / pass_plays), 
+           #penalties = sum(penalty, na.rm = TRUE), 
+           tot_yds = sum(yards_gained, na.rm = TRUE),
+           rush_yds_tot = sum(rushing_yards, na.rm = TRUE)) %>% 
+           #rusher = as.character(rusher),
+           #rusher = ifelse( is.na(rusher) == TRUE, getmode(rusher), rusher)) %>% 
+     mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
+            fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
+            score = ifelse(td+fg==1, 1,0)) %>%
+    select(passer, qbr_raw, qbr_total, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, rusher, completion_perc, run_plays, pass_plays, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score, posteam, drive_start_yard_line, headshot_href, wp, season) %>% 
+  mutate(yards_to_go_start= ifelse(str_extract(drive_start_yard_line, "[A-Z]+")== posteam, 100- parse_number(drive_start_yard_line), parse_number(drive_start_yard_line))) 
+```
+
+```{r}
+drive_summary_data <- two_min_by_drive %>%
+ arrange(game_id.x, drive) %>% 
+ group_by(game_id.x) %>% 
+  mutate(
+    td = as.factor(td), 
+    fg = as.factor(fg), 
+    score = as.factor(score)
+  ) %>%
+ summarise_all(last)
+
+drive_summary_data <- drive_summary_data %>% 
+  mutate(passer= replace(passer, passer=="Aa.Rodgers", "A.Rodgers"))
+
+drive_summary_data
+```
+```{r}
+drive_summary_data %>% 
+  summarize(num_td_drives= sum(td==1), num_fg_drives= sum(fg==1), num_drives=n(), td_success_perc= num_td_drives/num_drives, fg_success_perc= num_fg_drives/num_drives)
+```
+
+```{r}
+drive_summary_data %>% 
+  group_by(season) %>%
+  summarize(season, num_td_drives= sum(td==1), num_fg_drives= sum(fg==1), num_drives=n(), td_success_perc= num_td_drives/num_drives, fg_success_perc= num_fg_drives/num_drives ) %>% 
+  dplyr::slice(1) %>% 
+  dplyr::rename("Number of TD's Scored"= num_td_drives) %>%
+  dplyr::rename("Number of FG's Scored"= num_fg_drives) %>%
+  dplyr::rename("Number of Drives"= num_drives) %>%
+  dplyr::rename("TD Success Rate"= td_success_perc) %>%
+  dplyr::rename("FG Success Rate"= fg_success_perc) %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("2-minute Drills in the last 4 Seasons" = 6))  
+```
+
+
+```{r}
+drive_summary_data %>%
+  group_by(passer) %>% 
+  summarize(num_successful= sum(score==1), num_2min_drives= n(), success_perc= num_successful/num_2min_drives, headshot=headshot_href) %>%
+  arrange(desc(num_successful)) %>%  
+  dplyr::slice(1) %>% 
+  ggplot(aes(x=num_2min_drives, y= num_successful))+
+  geom_text_repel(aes(label=passer)) +
+  geom_image(aes(image= headshot), size=0.05, asp= 16/9)+
+  labs(x= "Number of 2-minute drill drives",
+       y= "Number of Successfull 2-minute drill drives",
+       title= "Every QB 2-Minute Drill Efficiency from 2018-2021",
+       caption = "Data: @nflfastR")+
+  scale_y_continuous(breaks = scales::pretty_breaks(n = 8)) +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 15))+
+  theme_bw()
+```
+
+```{r}
+drive_summary_data %>%
+  ggplot(aes(x=qbr_total, y=wp, color=score))+ 
+  geom_point()+
+  labs(x="Total QBR for that week",
+       y= "Current Winning Percentage during the Drive",
+       title = "Does scoring(TD or FG) on a 2-Minute Drill Drive increase Win Percentage?",
+       caption = "Data: @nflfastR",
+       color= "Scored?")+
+  scale_color_manual(labels = c("No", "Yes"), values = c("blue", "red"))
+  
+```
+
+
+
+
 
 # Modeling 
 
@@ -44,3 +210,5 @@ make predictions on new people... or real cfb situations
 Drawbacks / limitations
 
 # Conclusion 
+
+

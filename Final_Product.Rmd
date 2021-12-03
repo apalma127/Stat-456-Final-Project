@@ -1,11 +1,19 @@
 ---
 title: "Final Product"
-author: "Palma"
-date: "11/30/2021"
-output: html_document
+author: "Anthony Palma and Ben Wagner"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    df_print: paged
+    code_download: true
 ---
 
-```{r, error=FALSE}
+```{r setup, include=FALSE}
+#knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+```
+
+```{r, error=FALSE, include=FALSE}
 library(nflfastR)
 library(dplyr)
 library(tidyverse)
@@ -31,9 +39,13 @@ library(knitr)
 library(skimr)
 library(baguette) 
 library(future)
+library(broom)       # for making model summary tidy
+library(visreg)      # for plotting logodds and probability 
+library(margins)     # to calculate Average Marginal Effects
+library(ROCR) 
 ```
 
-```{r}
+```{r, include=FALSE}
 pbp_2018_2021 <- load_pbp(2018:2021)
 nfl_qbr_weekly <- readr::read_csv("https://raw.githubusercontent.com/nflverse/espnscrapeR-data/master/data/qbr-nfl-weekly.csv")
 nfl_qbr_weekly<-nfl_qbr_weekly %>% 
@@ -56,7 +68,7 @@ What will we be modeling / looking into?
 
 specifically ones that directly have impications upon the outcome (score?)
 
-```{r}
+```{r, include=FALSE}
 Two_min_drill <- pbp_2018_2021 %>% 
   filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
   
@@ -69,7 +81,7 @@ Two_min_drill %>%
 
 ```
 
-```{r}
+```{r, include=FALSE}
 Two_min_drill
 
 Two_min_drill %>% 
@@ -80,7 +92,7 @@ Two_min_drill %>%
   
 ```
 
-```{r}
+```{r, include=FALSE}
 two_min_new <- Two_min_drill %>% 
   group_by(game_id, drive) %>%
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
@@ -91,12 +103,26 @@ two_min_new <- Two_min_drill %>%
 ```
 
 
-```{r}
+```{r, include=FALSE}
+getmode <- function(v) {
+    v <- na.rm()
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+```
+
+
+```{r, include=FALSE}
+two_min_new <- two_min_new[!is.na(two_min_new$passer), ] 
+```
+
+
+```{r, include=FALSE}
 two_min_new %>%
   select(passer, ydsnet, qbr_total, qbr_raw, game_id.x, headshot_href)
 ```
 
-```{r}
+```{r, include=FALSE}
 two_min_by_drive <- 
   two_min_new  %>%
     group_by(drive, game_id.x) %>%
@@ -113,7 +139,7 @@ two_min_by_drive <-
   mutate(yards_to_go_start= ifelse(str_extract(drive_start_yard_line, "[A-Z]+")== posteam, 100- parse_number(drive_start_yard_line), parse_number(drive_start_yard_line))) 
 ```
 
-```{r}
+```{r, include=FALSE}
 drive_summary_data <- two_min_by_drive %>%
  arrange(game_id.x, drive) %>% 
  group_by(game_id.x) %>% 
@@ -129,12 +155,12 @@ drive_summary_data <- drive_summary_data %>%
 
 drive_summary_data
 ```
-```{r}
+```{r, echo=FALSE}
 drive_summary_data %>% 
   summarize(num_td_drives= sum(td==1), num_fg_drives= sum(fg==1), num_drives=n(), td_success_perc= num_td_drives/num_drives, fg_success_perc= num_fg_drives/num_drives)
 ```
 
-```{r}
+```{r, echo=FALSE}
 drive_summary_data %>% 
   group_by(season) %>%
   summarize(season, num_td_drives= sum(td==1), num_fg_drives= sum(fg==1), num_drives=n(), td_success_perc= num_td_drives/num_drives, fg_success_perc= num_fg_drives/num_drives ) %>% 
@@ -150,7 +176,7 @@ drive_summary_data %>%
 ```
 
 
-```{r}
+```{r, echo=FALSE}
 drive_summary_data %>%
   group_by(passer) %>% 
   summarize(num_successful= sum(score==1), num_2min_drives= n(), success_perc= num_successful/num_2min_drives, headshot=headshot_href) %>%
@@ -168,7 +194,7 @@ drive_summary_data %>%
   theme_bw()
 ```
 
-```{r}
+```{r, echo = FALSE}
 drive_summary_data %>%
   ggplot(aes(x=qbr_total, y=wp, color=score))+ 
   geom_point()+
@@ -186,7 +212,7 @@ drive_summary_data %>%
 # Modeling 
 
 
-```{r}
+```{r, include=FALSE}
 two_min_test <- 
   two_min_new  %>%
     group_by(drive, game_id.x) %>%
@@ -203,7 +229,7 @@ two_min_test <-
 ```
 
 
-```{r}
+```{r, include=FALSE}
 two_min_by_drive <-
   two_min_test %>%
     mutate(yards_to_go_start= ifelse(str_extract(drive_start_yard_line, "[A-Z]+")== posteam, 100- parse_number(drive_start_yard_line), parse_number(drive_start_yard_line))) 
@@ -212,7 +238,7 @@ two_min_by_drive <-
 two_min_by_drive
 ```
 
-```{r}
+```{r, include=FALSE}
 drive_summary_data <- two_min_by_drive %>%
  arrange(game_id.x, drive) %>% 
  group_by(game_id.x) %>% 
@@ -227,36 +253,25 @@ drive_summary_data <- two_min_by_drive %>%
 drive_summary_data
 ```
 
-```{r}
+```{r, include=FALSE}
 drive_summary_data$yards_to_go_start[is.na(drive_summary_data$yards_to_go_start)] <- 50
 
 ```
 
 
-```{r}
+```{r, include=FALSE}
 drive_summary_data %>%
   select(game_id.x, drive_game_clock_start, completion_perc, yards_to_go_start)
 ```
 
-1. Logistic Regression with Lasso
+## Lasso Logisitic Regression 
 
-
-# Lasso Logisitic Regression 
-
-```{r}
-library(dplyr)       # for data manipulation (dplyr) 
-library(broom)       # for making model summary tidy
-library(visreg)      # for plotting logodds and probability 
-library(margins)     # to calculate Average Marginal Effects
-library(ROCR)  
-```
-
-```{r}
+```{r, include=FALSE}
 drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <- 0
 
 ```
 
-```{r}
+```{r, include=FALSE}
 drive_summary_data$ydsnet[is.na(drive_summary_data$ydsnet)] <- 0
 drive_summary_data$drive_yards_penalized[is.na(drive_summary_data$drive_yards_penalized)] <- 0
 drive_summary_data$drive_game_clock_start[is.na(drive_summary_data$drive_game_clock_start)] <- 0
@@ -265,7 +280,7 @@ drive_summary_data$score[is.na(drive_summary_data$score)] <- 0
 ```
 
 
-```{r}
+```{r, include=FALSE}
 drive_summary_data <- 
   drive_summary_data %>%
   select( -posteam, -td, -fg, -game_id.x, -drive, -drive_start_yard_line)
@@ -273,14 +288,14 @@ drive_summary_data <-
 ```
 
 
-```{r}
+```{r, include=FALSE}
 drive_summary_data %>% 
   add_n_miss() %>% 
   count(n_miss_all)
 ```
 
 
-```{r}
+```{r, include=FALSE}
 
 set.seed(2)
 
@@ -294,22 +309,22 @@ drive_two_min_testing <- testing(drive_two_min_split)
 ```
 
 
-3. Set up the recipe and the pre-processing steps to build a lasso model
+**Recipe and Pre-processing** 
 
-
-```{r}
+```{r, include=FALSE}
 drive_two_min_training %>% 
   add_n_miss() %>% 
   count(n_miss_all)
 ```
-```{r}
+
+```{r, include=FALSE}
 drive_two_min_training %>%
 count(score)
 ```
 
 
 
-```{r}
+```{r, echo = FALSE}
 set.seed(2)
 
 lasso_recipe <- recipe(score ~ ., 
@@ -323,16 +338,16 @@ lasso_recipe <- recipe(score ~ .,
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 lasso_recipe %>% 
   prep(drive_two_min_training) %>%
   juice() 
 ```
 
 
-# Lasso Model and WF
+**Lasso Model and WF**
 
-```{r}
+```{r, echo = FALSE}
 lasso_mod  <- 
   logistic_reg(mixture = 1) %>% 
   set_engine("glmnet") %>% 
@@ -346,9 +361,9 @@ lasso_wf <-  workflow() %>%
 lasso_wf
 ```
 
-# More Lasso Set up
 
-```{r}
+
+```{r, include=FALSE}
 
 set.seed(2) 
 cv_split <- vfold_cv(drive_two_min_training, 
@@ -362,7 +377,7 @@ penalty_grid <- grid_regular(penalty(),
 penalty_grid
 ```
 
-```{r}
+```{r, include=FALSE}
 
 lasso_tune <-  
   lasso_wf %>% 
@@ -376,7 +391,7 @@ lasso_tune <-
 
 ```
 
-```{r}
+```{r, echo = FALSE}
 
 lasso_tune %>% 
   select(id, .metrics) %>% 
@@ -387,7 +402,7 @@ lasso_tune %>%
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 lasso_tune %>% 
   collect_metrics() %>% 
   filter(.metric == "accuracy") %>% 
@@ -401,27 +416,21 @@ lasso_tune %>%
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 lasso_tune %>% 
   show_best(metric = "accuracy")
 ```
 
-```{r}
+```{r, include = FALSE}
 best_param <- lasso_tune %>% 
   select_best(metric = "accuracy")
 best_param
 ```
 
 
-```{r}
-best_param <- lasso_tune %>%
-  select_best(metric = "accuracy")
+**Lasso Final Optimized Model**
 
-best_param
-```
-
-
-```{r}
+```{r, echo = FALSE}
 lasso_final_wf <- lasso_wf %>% 
   finalize_workflow(best_param)
 lasso_final_wf
@@ -429,7 +438,7 @@ lasso_final_wf
 
 
 
-```{r}
+```{r, echo = FALSE}
 lasso_final_mod <- lasso_final_wf %>% 
   fit(data = drive_two_min_training)
 
@@ -439,14 +448,14 @@ lasso_final_mod %>%
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 lasso_final_mod %>% 
   pull_workflow_fit() %>% 
   vip()
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 lasso_test <- lasso_final_wf %>% 
   last_fit(drive_two_min_split)
 
@@ -454,60 +463,63 @@ lasso_test %>%
   collect_metrics()
 ```
 
-```{r}
+```{r, echo = FALSE}
 collect_predictions(lasso_test) 
 
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 preds <-
   collect_predictions(lasso_test) 
 conf_mat(preds, .pred_class, score)
 ```
 
 
-```{r}
+```{r, include=FALSE}
 accuracy(preds, truth = score,
          estimate = .pred_class)
 ```
 
-```{r}
+```{r, include=FALSE}
 sens(preds, truth = score,
          estimate = .pred_class)
 ```
 
-**Ratio between how much classified as score to how much was actually a score**
 
-```{r}
+```{r, include=FALSE}
 spec(preds, truth = score,
          estimate = .pred_class)
 ```
-**Ratio between how much classified as no score to how much was actually no score**
 
-```{r}
+```{r, include=FALSE}
 precision(preds, truth = score,
          estimate = .pred_class)
 ```
-**How much were correctly classified as a score out of all scores?**
 
 
-```{r}
+```{r, include=FALSE}
 f_meas(preds, truth = score,
          estimate = .pred_class)
 ```
-**The F1 score is about 0.818, which indicates that the trained model has a classification strength of 81.8%%.**
 
 
-```{r}
+```{r, echo = FALSE}
 custom_metrics <- metric_set(accuracy, sens, spec, precision, f_meas)
 
 custom_metrics(preds, truth = score,
          estimate = .pred_class)
 ```
 
+**Sens -- Ratio between how much classified as score to how much was actually a score**
+**Spec -- Ratio between how much classified as no score to how much was actually no score**
+**Precision -- How much were correctly classified as a score out of all scores?**
+**F meas -- The F1 score is about 0.818, which indicates that the trained model has a classification strength of 81.8%%.**
 
-```{r}
+
+
+
+```{r, echo = FALSE}
 roc_auc(preds,
         truth = score,
         .pred_0)
@@ -515,14 +527,14 @@ roc_auc(preds,
 
 **ROC-AUC is a performance measurement for the classification problem at various thresholds settings. ROC_AUC tells how much the model is capable of distinguishing between classes. The trained logistic regression model has a ROC-AUC of ______**
 
-```{r}
+```{r, echo = FALSE}
 preds %>%
   roc_curve(truth = score, .pred_0) %>%
   autoplot()
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 preds %>%
   ggplot() +
   geom_density(aes(x = .pred_0, fill = score), 
@@ -530,7 +542,7 @@ preds %>%
 ```
 
 
-```{r}
+```{r, include = FALSE}
 drive_two_min_training
 ```
 
@@ -546,9 +558,9 @@ predict(lasso_final_mod, new_data = new_qb)
 ```
 
 
-2. Decision Tree -- Random Forest
+## Decision Tree -- Random Forest
 
-```{r}
+```{r, include = FALSE}
 
 set.seed(2)
 
@@ -563,14 +575,14 @@ cv_split <- vfold_cv(drive_two_min_training,
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 rf_recipe <- recipe(score ~ ., 
                        data = drive_two_min_training) %>% 
   step_upsample(score, over_ratio = 1) 
 ```
 
 
-```{r}
+```{r, include = FALSE}
 set.seed(2)
 rf_model <- rand_forest(mtry = tune(), 
               min_n = tune(), 
@@ -579,7 +591,7 @@ rf_model <- rand_forest(mtry = tune(),
   set_engine("ranger")
 ```
 
-```{r}
+```{r, echo = FALSE}
 rf_workflow <- workflow() %>%
   add_recipe(rf_recipe) %>%
   add_model(rf_model) 
@@ -587,7 +599,7 @@ rf_workflow <- workflow() %>%
 
 
 
-```{r}
+```{r, include = FALSE}
 rf_penalty_grid <- grid_regular(
   finalize(mtry(), drive_two_min_training %>% select(-score)),
   min_n(),
@@ -602,11 +614,12 @@ rf_tune <-
     control = control_stack_grid())
 ```
 
-```{r}
+```{r, echo = FALSE}
 rf_tune %>%
   select_best(metric = "accuracy")
 ```
-```{r}
+
+```{r, echo = FALSE}
 rf_tune %>%
   collect_metrics(metric = "accuracy") %>%
   filter(.config == "Preprocessor1_Model1")
@@ -614,9 +627,9 @@ rf_tune %>%
 
 
 
-3.  Boosted Decision Tree
+## Boosted Decision Tree
 
-```{r}
+```{r, echo = FALSE}
 xgboost_spec <-
   boost_tree(
     trees = 1000,
@@ -656,12 +669,12 @@ boost_tune <- xgboost_workflow %>%
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 boost_tune %>%
   select_best(metric = "accuracy")
 ```
 
-```{r}
+```{r, echo = FALSE}
 boost_tune %>%
   collect_metrics(metric = "accuracy") %>%
   filter(.config == "Preprocessor1_Model10")
@@ -669,7 +682,7 @@ boost_tune %>%
 
 # Comparison
 
-```{r}
+```{r, echo = FALSE}
 lasso_tune %>% 
   collect_predictions() %>% 
   group_by(id, penalty) %>% 
@@ -680,7 +693,7 @@ lasso_tune %>%
   summarize(across(accuracy:true_pos_rate, mean))
 ```
 
-```{r}
+```{r, echo = FALSE}
 rf_tune %>% 
   collect_predictions() %>% 
   group_by(id, mtry, min_n) %>% 
@@ -691,7 +704,7 @@ rf_tune %>%
   summarize(across(accuracy:true_pos_rate, mean))
 ```
 
-```{r}
+```{r, echo = FALSE}
 boost_tune %>% 
   collect_predictions() %>% 
   group_by(id, learn_rate) %>% 
@@ -707,10 +720,6 @@ boost_tune %>%
 
 # Conclusion 
 
-<<<<<<< HEAD
-
-=======
 What did we uncover about two min drills?
 
 When are they more successful? When are they less? What vars are the most important?
->>>>>>> df2a57f636984d74ab99d9deb37f4ec34c26f7a7

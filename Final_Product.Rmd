@@ -52,17 +52,11 @@ nfl_qbr_weekly<-nfl_qbr_weekly %>%
   filter(season==2018:2021)
 ```
 
-# Intro to the "Two Minute Drill"
+# Introduction 
 
-Show win probability .... what happens here that changes the outcome?
+What is the two minute drill?
 
-Show QB face plots
-
-Show most successful plots
-
-What will we be modeling / looking into?
-
-# Intro Visualizations 
+Why is it important? 
 
 3 - 4 intro visualizations investigating interesting behavior....
 
@@ -196,7 +190,19 @@ drive_summary_data %>%
 
 ```{r, echo = FALSE}
 drive_summary_data %>%
-  ggplot(aes(x=qbr_total, y=wp, color=score))+ 
+  ggplot(aes(x=qbr_total, y=wp)) + 
+  facet_wrap(~score) +
+  geom_point()+
+  geom_smooth() +
+  labs(x="Total QBR for that week",
+       y= "Current Winning Percentage during the Drive",
+       title = "Does scoring(TD or FG) on a 2-Minute Drill Drive increase Win Percentage?",
+       caption = "Data: @nflfastR",
+       color= "Scored?")+
+  scale_color_manual(labels = c("No", "Yes"), values = c("blue", "red"))
+
+drive_summary_data %>%
+  ggplot(aes(x=qbr_total, y=wp, color=score))+
   geom_point()+
   labs(x="Total QBR for that week",
        y= "Current Winning Percentage during the Drive",
@@ -204,7 +210,61 @@ drive_summary_data %>%
        caption = "Data: @nflfastR",
        color= "Scored?")+
   scale_color_manual(labels = c("No", "Yes"), values = c("blue", "red"))
-  
+
+```
+
+```{r}
+# qbr // score
+
+drive_summary_data %>%  
+  ggplot(aes(x = qbr_total, y = score)) +
+  geom_boxplot()
+
+drive_summary_data %>%  
+  ggplot(aes(x = qbr_total)) +
+  geom_histogram(bins = 40) +
+  geom_vline(data = filter(drive_summary_data, score=="0"), aes(xintercept= mean(qbr_total)), colour="blue") +
+  geom_vline(data = filter(drive_summary_data, score=="1"), aes(xintercept= mean(qbr_total)), colour="blue") +
+  facet_wrap(~score) 
+
+drive_summary_data %>%  
+  ggplot(aes(x = qbr_total)) +
+  geom_freqpoly(bins = 40) + 
+  geom_vline(data = filter(drive_summary_data, score=="0"), aes(xintercept= mean(qbr_total)), colour="blue") +
+  geom_vline(data = filter(drive_summary_data, score=="1"), aes(xintercept= mean(qbr_total)), colour="blue") +
+  facet_wrap(~score) 
+
+
+```
+
+
+
+```{r}
+# qbr // compl perc
+ 
+drive_summary_data %>%
+   ggplot(aes(x = qbr_total, y = completion_perc)) +
+   geom_point() +
+   geom_smooth()
+
+```
+
+
+
+```{r}
+# tot yds in drive (x) // amt of time left (ms drive gamenstart from ben code) (y) , score as color or facet
+
+# game time var = drive_game_clock_start
+
+
+ drive_summary_data %>%
+   ggplot(aes(x = qbr_total, y = completion_perc)) +
+    facet_wrap(~score) +
+   geom_point() +
+   geom_smooth()
+
+
+
 ```
 
 

@@ -149,9 +149,13 @@ drive_summary_data <- drive_summary_data %>%
 
 drive_summary_data
 ```
+
 ```{r, echo=FALSE}
 drive_summary_data %>% 
-  summarize(num_td_drives= sum(td==1), num_fg_drives= sum(fg==1), num_drives=n(), td_success_perc= num_td_drives/num_drives, fg_success_perc= num_fg_drives/num_drives)
+  summarize(num_td_drives= sum(td==1), num_fg_drives= sum(fg==1), num_drives=n(), td_success_perc= num_td_drives/num_drives, fg_success_perc= num_fg_drives/num_drives)  %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Two Minute Drill Success Rates" = 5)) 
 ```
 
 ```{r, echo=FALSE}
@@ -270,6 +274,7 @@ drive_summary_data %>%
 
 
 # Modeling 
+
 
 
 ```{r, include=FALSE}
@@ -398,10 +403,13 @@ lasso_recipe <- recipe(score ~ .,
 ```
 
 
-```{r, echo = FALSE}
+```{r, include = FALSE}
 lasso_recipe %>% 
   prep(drive_two_min_training) %>%
-  juice() 
+  juice() %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Lasso Log Reg Recipe Output" = 13)) 
 ```
 
 
@@ -456,7 +464,10 @@ lasso_tune <-
 lasso_tune %>% 
   select(id, .metrics) %>% 
   unnest(.metrics) %>% 
-  filter(.metric == "accuracy")
+  filter(.metric == "accuracy") %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Lasso Log Reg Models Performance" = 6)) 
 
 
 ```
@@ -478,13 +489,20 @@ lasso_tune %>%
 
 ```{r, echo = FALSE}
 lasso_tune %>% 
-  show_best(metric = "accuracy")
+  show_best(metric = "accuracy") %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Lasso Log Reg Best Accuracy Models" = 7)) 
 ```
 
-```{r, include = FALSE}
+```{r, echo = FALSE}
 best_param <- lasso_tune %>% 
   select_best(metric = "accuracy")
-best_param
+
+best_param %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Lasso Log Reg Best Model" = 2)) 
 ```
 
 
@@ -504,7 +522,10 @@ lasso_final_mod <- lasso_final_wf %>%
 
 lasso_final_mod %>% 
   pull_workflow_fit() %>% 
-  tidy() 
+  tidy() %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Lasso Log Reg Finalized Model Coefficients" = 3)) 
 ```
 
 
@@ -520,11 +541,20 @@ lasso_test <- lasso_final_wf %>%
   last_fit(drive_two_min_split)
 
 lasso_test %>% 
-  collect_metrics()
+  collect_metrics() %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Lasso Log Reg Best Model Accuracy and ROC" = 4)) 
 ```
 
+**ROC-AUC is a performance measurement for the classification problem at various thresholds settings. ROC_AUC tells how much the model is capable of distinguishing between classes. The trained logistic regression model has a ROC-AUC of ______**
+
+
 ```{r, echo = FALSE}
-collect_predictions(lasso_test) 
+collect_predictions(lasso_test) %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Lasso Log Reg Model Predictions" = 7)) 
 
 ```
 
@@ -532,43 +562,20 @@ collect_predictions(lasso_test)
 ```{r, echo = FALSE}
 preds <-
   collect_predictions(lasso_test) 
-conf_mat(preds, .pred_class, score)
+conf_mat(preds, .pred_class, score) 
+  
 ```
 
-
-```{r, include=FALSE}
-accuracy(preds, truth = score,
-         estimate = .pred_class)
-```
-
-```{r, include=FALSE}
-sens(preds, truth = score,
-         estimate = .pred_class)
-```
-
-
-```{r, include=FALSE}
-spec(preds, truth = score,
-         estimate = .pred_class)
-```
-
-```{r, include=FALSE}
-precision(preds, truth = score,
-         estimate = .pred_class)
-```
-
-
-```{r, include=FALSE}
-f_meas(preds, truth = score,
-         estimate = .pred_class)
-```
 
 
 ```{r, echo = FALSE}
 custom_metrics <- metric_set(accuracy, sens, spec, precision, f_meas)
 
 custom_metrics(preds, truth = score,
-         estimate = .pred_class)
+         estimate = .pred_class) %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Lasso Log Reg Finalized Model Metrics" = 3)) 
 ```
 
 **Sens -- Ratio between how much classified as score to how much was actually a score**
@@ -577,15 +584,6 @@ custom_metrics(preds, truth = score,
 **F meas -- The F1 score is about 0.818, which indicates that the trained model has a classification strength of 81.8%%.**
 
 
-
-
-```{r, echo = FALSE}
-roc_auc(preds,
-        truth = score,
-        .pred_0)
-```
-
-**ROC-AUC is a performance measurement for the classification problem at various thresholds settings. ROC_AUC tells how much the model is capable of distinguishing between classes. The trained logistic regression model has a ROC-AUC of ______**
 
 ```{r, echo = FALSE}
 preds %>%
@@ -607,13 +605,21 @@ drive_two_min_training
 ```
 
 ```{r}
-new_qb <- tribble(~qbr_raw, ~qbr_total, ~pass_tot_yds, ~tot_yds, ~ydsnet, ~rush_yds_tot, ~completion_perc, ~run_plays, ~pass_plays, ~drive_yards_penalized, ~drive_game_clock_start, ~yards_to_go_start,
-                     70, 75, 50, 70, 80, 20, 0.6, 4, 7, 20, 115, 90)
-new_qb
+new_qb <- tribble(~qbr_raw, ~qbr_total, ~pass_tot_yds, ~tot_yds, ~ydsnet, ~rush_yds_tot, ~completion_perc, ~run_plays, ~pass_plays, ~drive_yards_penalized, ~drive_game_clock_start, ~yards_to_go_start, ~score,
+                     70, 75, 50, 70, 80, 20, 0.6, 4, 7, 20, 115, 90, 1)
+new_qb %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Lasso Log Reg New QB Entry" = 13)) 
+  
+
 ```
 
 ```{r}
-predict(lasso_final_mod, new_data = new_qb)
+predict(lasso_final_mod, new_data = new_qb) %>%
+    kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Lasso Log Reg New QB Entry - Prediction" = 1)) 
 
 ```
 
@@ -676,13 +682,19 @@ rf_tune <-
 
 ```{r, echo = FALSE}
 rf_tune %>%
-  select_best(metric = "accuracy")
+  select_best(metric = "accuracy") %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Decision Tree Random Forest Best Model" = 3))
 ```
 
 ```{r, echo = FALSE}
 rf_tune %>%
   collect_metrics(metric = "accuracy") %>%
-  filter(.config == "Preprocessor1_Model1")
+  filter(.config == "Preprocessor1_Model1") %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Decision Tree Random Forest Best Model" = 8))
 ```
 
 
@@ -731,16 +743,22 @@ boost_tune <- xgboost_workflow %>%
 
 ```{r, echo = FALSE}
 boost_tune %>%
-  select_best(metric = "accuracy")
+  select_best(metric = "accuracy") %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Decision Tree Boosted Best Model" = 2))
 ```
 
 ```{r, echo = FALSE}
 boost_tune %>%
   collect_metrics(metric = "accuracy") %>%
-  filter(.config == "Preprocessor1_Model10")
+  filter(.config == "Preprocessor1_Model10") %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Decision Tree Boosted Best Accuracy Models" = 7)) 
 ```
 
-# Comparison
+# Comparing Model Performance
 
 ```{r, echo = FALSE}
 lasso_tune %>% 
@@ -750,7 +768,10 @@ lasso_tune %>%
             true_neg_rate = sum(score == 0 & .pred_class == 0)/sum(score == 0),
             true_pos_rate = sum(score == 1 & .pred_class == 1)/sum(score == 1)) %>% 
   group_by(penalty) %>% 
-  summarize(across(accuracy:true_pos_rate, mean))
+  summarize(across(accuracy:true_pos_rate, mean)) %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Lasso Models Performance" = 4)) 
 ```
 
 ```{r, echo = FALSE}
@@ -761,7 +782,10 @@ rf_tune %>%
             true_neg_rate = sum(score == 0 & .pred_class == 0)/sum(score == 0),
             true_pos_rate = sum(score == 1 & .pred_class == 1)/sum(score == 1)) %>% 
   group_by(mtry, min_n) %>% 
-  summarize(across(accuracy:true_pos_rate, mean))
+  summarize(across(accuracy:true_pos_rate, mean)) %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Decision Tree -- Random Forest Models Performance" = 5)) 
 ```
 
 ```{r, echo = FALSE}
@@ -772,7 +796,10 @@ boost_tune %>%
             true_neg_rate = sum(score == 0 & .pred_class == 0)/sum(score == 0),
             true_pos_rate = sum(score == 1 & .pred_class == 1)/sum(score == 1)) %>% 
   group_by(learn_rate) %>% 
-  summarize(across(accuracy:true_pos_rate, mean))
+  summarize(across(accuracy:true_pos_rate, mean)) %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Decision Tree -- Boosted Tree Models Performance" = 4)) 
 ```
 
 

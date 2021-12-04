@@ -568,6 +568,7 @@ conf_mat(preds, .pred_class, score)
 
 
 
+
 ```{r, echo = FALSE}
 custom_metrics <- metric_set(accuracy, sens, spec, precision, f_meas)
 
@@ -604,10 +605,24 @@ preds %>%
 drive_two_min_training
 ```
 
+Famous Two in Drill in CFB CFP Finals:
+
+(2) Clemson vs (1) Alabama: Jan 9, 2017 
+
+31-28 Alabama with 2:01 left in 4Q
+Clemson ball on Clem 32, 68 yards to go to win the game
+Clemson ends up driving all 68 yards for a Deshaun Watson pass to Hunte Renfrow for a TD to win the game with 1 second left. 
+
+How does our best model, the logistic regression predict this? 
+
+Data was obtained from ESPN's cache of play by play ....
+some unavailable data at the time like game qbr has an average of the season for the passer
+
+
 ```{r}
-new_qb <- tribble(~qbr_raw, ~qbr_total, ~pass_tot_yds, ~tot_yds, ~ydsnet, ~rush_yds_tot, ~completion_perc, ~run_plays, ~pass_plays, ~drive_yards_penalized, ~drive_game_clock_start, ~yards_to_go_start, ~score,
-                     70, 75, 50, 70, 80, 20, 0.6, 4, 7, 20, 115, 90, 1)
-new_qb %>%
+watson_to_renfrow <- tribble(~qbr_raw, ~qbr_total, ~pass_tot_yds, ~tot_yds, ~ydsnet, ~rush_yds_tot, ~completion_perc, ~run_plays, ~pass_plays, ~drive_yards_penalized, ~drive_game_clock_start, ~yards_to_go_start, ~score,
+                     104.5, 104.5, 60, 68, 68, 1, 0.6667, 1, 9, 7, 127, 68, 1)
+watson_to_renfrow %>%
   kbl() %>% 
   kable_paper("striped") %>% 
   add_header_above(c("Lasso Log Reg New QB Entry" = 13)) 
@@ -616,12 +631,15 @@ new_qb %>%
 ```
 
 ```{r}
-predict(lasso_final_mod, new_data = new_qb) %>%
+predict(lasso_final_mod, new_data = watson_to_renfrow) %>%
     kbl() %>% 
   kable_paper("striped") %>% 
   add_header_above(c("Lasso Log Reg New QB Entry - Prediction" = 1)) 
 
 ```
+
+
+**You can see our model predicts a score here correctly!**
 
 
 ## Decision Tree -- Random Forest
@@ -679,6 +697,7 @@ rf_tune <-
     grid = rf_penalty_grid, 
     control = control_stack_grid())
 ```
+
 
 ```{r, echo = FALSE}
 rf_tune %>%
@@ -758,6 +777,7 @@ boost_tune %>%
   add_header_above(c("Decision Tree Boosted Best Accuracy Models" = 7)) 
 ```
 
+
 # Comparing Model Performance
 
 ```{r, echo = FALSE}
@@ -774,6 +794,23 @@ lasso_tune %>%
   add_header_above(c("Lasso Models Performance" = 4)) 
 ```
 
+```{r}
+Avg_Accuracylr <- (0.8291755 + 0.8291755 + 0.8291755 + 0.8291755 + 0.8291755 + 0.8291755 + 0.8338266 + 0.8384778 + 0.8198732 + 0.5640592) / 10
+Avg_Accuracylr
+```
+
+**Log Reg Avg Accuracy = 0.803129**
+True Pos Rate :
+
+
+
+
+
+
+
+
+
+
 ```{r, echo = FALSE}
 rf_tune %>% 
   collect_predictions() %>% 
@@ -787,6 +824,16 @@ rf_tune %>%
   kable_paper("striped") %>% 
   add_header_above(c("Decision Tree -- Random Forest Models Performance" = 5)) 
 ```
+
+```{r}
+Avg_Accuracyrf <- (0.8058140 + 0.8195560 + 0.8007400 + 0.8242072 + 0.8059197 + 0.7779070 + 0.8427061 + 0.8195560 + 0.7963002) / 9
+
+Avg_Accuracyrf
+```
+
+**Random Forest Avg Accuracy = 0.8103007**
+
+
 
 ```{r, echo = FALSE}
 boost_tune %>% 
@@ -802,8 +849,13 @@ boost_tune %>%
   add_header_above(c("Decision Tree -- Boosted Tree Models Performance" = 4)) 
 ```
 
+```{r}
+Avg_Accuracybb <- (0.6899577 + 0.7595137 + 0.7642706 + 0.7642706 + 0.7642706 + 0.7642706 + 0.7315011 + 0.7497886 + 0.8243129 + 0.8335095) / 10
 
+Avg_Accuracybb
+```
 
+**Boosted Trees Avg Accuracy = 0.7645666**
 
 # Conclusion 
 

@@ -271,11 +271,11 @@ drive_summary_data %>%
 
 ```
 
+We will explore the relationship between football stats in our set and the score outcome of two minute drills from the 2018 - 2021 seasons.  
 
+We will do so using primarily a logisitic regression and will also explore random forests and boosted trees to ensure we explored all other options.  
 
 # Modeling 
-
-
 
 ```{r, include=FALSE}
 two_min_test <- 
@@ -331,6 +331,10 @@ drive_summary_data %>%
 
 ## Lasso Logisitic Regression 
 
+Our primary model we will be focusing on is a Logistic Regression.  This model specializes in predicting probabilities of our outcome, not just the outcome.  That way with this model, we can not only see whether it predicts a score or not but we can see and have access to the probabilities it used to predict the outcome.  
+
+When creating this model, we will be using a Lasso Approach which stands for least absolute shrinkage and selection operator.  In short, this type of modeling selects variables and their impact size while taking into account maximizing the accuracy and interpretability of the model.       
+
 ```{r, include=FALSE}
 drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <- 0
 
@@ -373,8 +377,20 @@ drive_two_min_testing <- testing(drive_two_min_split)
 
 ```
 
+We had to do some data cleaning work to prep our data for modeling.  This primarily centered around removing NA values and replacing them with appropriate substitutes whether it be 0 in some cases or the average of the column etc.  
 
+Next, the data was split into a training and testing set to ensure we were not overfitting our model to just our current set.  
+  
 **Recipe and Pre-processing** 
+
+
+
+
+
+
+
+
+
 
 ```{r, include=FALSE}
 drive_two_min_training %>% 
@@ -513,6 +529,26 @@ lasso_final_wf <- lasso_wf %>%
   finalize_workflow(best_param)
 lasso_final_wf
 ```
+
+Below, you can see the logistic regression model output for all of our variables and their coefficients.  
+
+**when holding all other variables constant... **
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -808,9 +844,6 @@ True Pos Rate :
 
 
 
-
-
-
 ```{r, echo = FALSE}
 rf_tune %>% 
   collect_predictions() %>% 
@@ -857,8 +890,28 @@ Avg_Accuracybb
 
 **Boosted Trees Avg Accuracy = 0.7645666**
 
+Here you can see that the best and most interpretable model for our case is the lgositic regression as it has the highest accuracy while maintaining a strong true positive rate.    
+
+# Data Ethics and Repercussion of Analysis
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Conclusion 
 
 What did we uncover about two min drills?
-
 When are they more successful? When are they less? What vars are the most important?

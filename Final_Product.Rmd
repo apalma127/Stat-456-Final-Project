@@ -73,18 +73,13 @@ Two_min_drill %>%
   fg = ifelse(fixed_drive_result=='Field goal', 1, 0)) %>%
   mutate(score= ifelse(td+fg==1, 1,0))
 
-```
-
-```{r, include=FALSE}
-Two_min_drill
-
 Two_min_drill %>% 
   group_by(game_id, drive) %>%
   mutate(rush_attempt = ifelse(is.na(rush_attempt), 0, rush_attempt)) %>% 
   mutate(pass_attempt = ifelse(is.na(pass_attempt), 0, pass_attempt)) %>%
   summarize(num_plays= n(), num_rush=sum(rush_attempt), num_pass= sum(pass_attempt))
-  
 ```
+
 
 ```{r, include=FALSE}
 two_min_new <- Two_min_drill %>% 
@@ -103,6 +98,9 @@ getmode <- function(v) {
    uniqv <- unique(v)
    uniqv[which.max(tabulate(match(v, uniqv)))]
 }
+
+two_min_new <- two_min_new[!is.na(two_min_new$passer), ] 
+
 ```
 
 
@@ -110,11 +108,6 @@ getmode <- function(v) {
 two_min_new <- two_min_new[!is.na(two_min_new$passer), ] 
 ```
 
-
-```{r, include=FALSE}
-two_min_new %>%
-  select(passer, ydsnet, qbr_total, qbr_raw, game_id.x, headshot_href)
-```
 
 ```{r, include=FALSE}
 two_min_by_drive <- 
@@ -131,9 +124,7 @@ two_min_by_drive <-
             score = ifelse(td+fg==1, 1,0)) %>%
     select(passer, qbr_raw, qbr_total, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, rusher, completion_perc, run_plays, pass_plays, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score, posteam, drive_start_yard_line, headshot_href, wp, season) %>% 
   mutate(yards_to_go_start= ifelse(str_extract(drive_start_yard_line, "[A-Z]+")== posteam, 100- parse_number(drive_start_yard_line), parse_number(drive_start_yard_line))) 
-```
 
-```{r, include=FALSE}
 drive_summary_data <- two_min_by_drive %>%
  arrange(game_id.x, drive) %>% 
  group_by(game_id.x) %>% 
@@ -149,6 +140,8 @@ drive_summary_data <- drive_summary_data %>%
 
 drive_summary_data
 ```
+
+
 
 ```{r, echo=FALSE}
 drive_summary_data %>% 
@@ -291,19 +284,13 @@ two_min_test <-
             fg = ifelse(fixed_drive_result=='Field goal', 1, 0), 
             score = ifelse(td+fg==1, 1,0)) %>%
     select(qbr_raw, qbr_total, pass_tot_yds, tot_yds, ydsnet, rush_yds_tot, completion_perc, run_plays, pass_plays, drive_yards_penalized, tot_yds, drive_game_clock_start, td, fg, score, posteam, drive_start_yard_line)
-```
 
-
-```{r, include=FALSE}
 two_min_by_drive <-
   two_min_test %>%
     mutate(yards_to_go_start= ifelse(str_extract(drive_start_yard_line, "[A-Z]+")== posteam, 100- parse_number(drive_start_yard_line), parse_number(drive_start_yard_line))) 
   
-
 two_min_by_drive
-```
 
-```{r, include=FALSE}
 drive_summary_data <- two_min_by_drive %>%
  arrange(game_id.x, drive) %>% 
  group_by(game_id.x) %>% 
@@ -316,18 +303,15 @@ drive_summary_data <- two_min_by_drive %>%
  summarise_all(last)
 
 drive_summary_data
-```
 
-```{r, include=FALSE}
 drive_summary_data$yards_to_go_start[is.na(drive_summary_data$yards_to_go_start)] <- 50
 
-```
-
-
-```{r, include=FALSE}
 drive_summary_data %>%
   select(game_id.x, drive_game_clock_start, completion_perc, yards_to_go_start)
+
 ```
+
+
 
 ## Lasso Logisitic Regression 
 
@@ -337,31 +321,21 @@ When creating this model, we will be using a Lasso Approach which stands for lea
 
 ```{r, include=FALSE}
 drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <- 0
-
-```
-
-```{r, include=FALSE}
 drive_summary_data$ydsnet[is.na(drive_summary_data$ydsnet)] <- 0
 drive_summary_data$drive_yards_penalized[is.na(drive_summary_data$drive_yards_penalized)] <- 0
 drive_summary_data$drive_game_clock_start[is.na(drive_summary_data$drive_game_clock_start)] <- 0
 drive_summary_data$score[is.na(drive_summary_data$score)] <- 0
 
-```
 
-
-```{r, include=FALSE}
 drive_summary_data <- 
   drive_summary_data %>%
   select( -posteam, -td, -fg, -game_id.x, -drive, -drive_start_yard_line)
 
-```
-
-
-```{r, include=FALSE}
 drive_summary_data %>% 
   add_n_miss() %>% 
   count(n_miss_all)
 ```
+
 
 
 ```{r, include=FALSE}
@@ -396,9 +370,7 @@ Next, the data was split into a training and testing set to ensure we were not o
 drive_two_min_training %>% 
   add_n_miss() %>% 
   count(n_miss_all)
-```
 
-```{r, include=FALSE}
 drive_two_min_training %>%
 count(score)
 ```
@@ -459,9 +431,6 @@ penalty_grid <- grid_regular(penalty(),
                              levels = 10)
 
 penalty_grid
-```
-
-```{r, include=FALSE}
 
 lasso_tune <-  
   lasso_wf %>% 
@@ -469,10 +438,6 @@ lasso_tune <-
     resamples = cv_split,
     grid = penalty_grid,
     control = control_stack_grid())
-
-
-
-
 ```
 
 ```{r, echo = FALSE}
@@ -830,7 +795,7 @@ lasso_tune %>%
   add_header_above(c("Lasso Models Performance" = 4)) 
 ```
 
-```{r}
+```{r, echo = FALSE}
 Avg_Accuracylr <- (0.8291755 + 0.8291755 + 0.8291755 + 0.8291755 + 0.8291755 + 0.8291755 + 0.8338266 + 0.8384778 + 0.8198732 + 0.5640592) / 10
 Avg_Accuracylr
 ```
@@ -858,7 +823,7 @@ rf_tune %>%
   add_header_above(c("Decision Tree -- Random Forest Models Performance" = 5)) 
 ```
 
-```{r}
+```{r, echo = FALSE}
 Avg_Accuracyrf <- (0.8058140 + 0.8195560 + 0.8007400 + 0.8242072 + 0.8059197 + 0.7779070 + 0.8427061 + 0.8195560 + 0.7963002) / 9
 
 Avg_Accuracyrf
@@ -882,7 +847,7 @@ boost_tune %>%
   add_header_above(c("Decision Tree -- Boosted Tree Models Performance" = 4)) 
 ```
 
-```{r}
+```{r, echo = FALSE}
 Avg_Accuracybb <- (0.6899577 + 0.7595137 + 0.7642706 + 0.7642706 + 0.7642706 + 0.7642706 + 0.7315011 + 0.7497886 + 0.8243129 + 0.8335095) / 10
 
 Avg_Accuracybb

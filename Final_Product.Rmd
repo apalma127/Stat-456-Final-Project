@@ -217,12 +217,9 @@ drive_summary_data %>%
 
 ```
 
-<<<<<<< HEAD
 
 ```{r, echo = FALSE}
-=======
-```{r include=FALSE}
->>>>>>> 37022aea832c104d9849324ac9c7d199478e1471
+
 # qbr // score
 
 drive_summary_data %>%  
@@ -248,11 +245,7 @@ drive_summary_data %>%
 
 
 
-<<<<<<< HEAD
 ```{r, echo = FALSE}
-=======
-```{r, include=FALSE, warning=FALSE, message=FALSE}
->>>>>>> 37022aea832c104d9849324ac9c7d199478e1471
 # qbr // compl perc
  
 drive_summary_data %>%
@@ -269,11 +262,8 @@ drive_summary_data %>%
 
 
 
-<<<<<<< HEAD
 ```{r, echo = FALSE}
-=======
-```{r, include=FALSE, message=FALSE, warning=FALSE}
->>>>>>> 37022aea832c104d9849324ac9c7d199478e1471
+
 # tot yds in drive (x) // amt of time left (ms drive gamenstart from ben code) (y) , score as color or facet
 
 # game time var = drive_game_clock_start

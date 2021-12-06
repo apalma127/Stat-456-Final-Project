@@ -54,7 +54,9 @@ Why is it important?
 
 3 - 4 intro visualizations investigating interesting behavior....
 
-specifically ones that directly have impications upon the outcome (score?)
+specifically ones that directly have implications upon the outcome (score?)
+
+If you ever want to watch the greatest minds of the football world prove that they are elite, look no further than a close game with 2 minutes or less left on the clock. The "2-minute Drill" has been a staple tactic employed by teams for almost as long as the game has been around. Wikipedia defines this style of hurry-up offense as a "high-pressure and fast-paced situational strategy where a team will focus on clock management, maximizing the number of plays available for a scoring attempt before a half (or game) expires." When teams perform the 2-minute drill, you should expect them to manage the clock using timeouts and plays that eliminate a running clock. You can expect a two minute drill drive in about 1 in 5 games, so it makes sense why these drives are so important.
 
 ```{r, include=FALSE}
 pbp_2018_2021 <- load_pbp(2018:2021)
@@ -132,17 +134,22 @@ drive_summary_data <- drive_summary_data %>%
 drive_summary_data
 ```
 
+Here you can see the number of drives that began under 2 minutes and 30 seconds left in the first or second halves from 2018 to today. As you can see, it is not too often that a team successfully completes a drive by scoring points. Just more than 21% of the time, teams have score at least 3 points and kick a field goal. While only 10% of the time, teams have reached the endzone for 6.
 
-
-```{r, echo=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
 drive_summary_data %>% 
   summarize(num_td_drives= sum(td==1), num_fg_drives= sum(fg==1), num_drives=n(), td_success_perc= num_td_drives/num_drives, fg_success_perc= num_fg_drives/num_drives)  %>%
+  dplyr::rename("Number of TD's Scored"= num_td_drives) %>%
+  dplyr::rename("Number of FG's Scored"= num_fg_drives) %>%
+  dplyr::rename("Number of Drives"= num_drives) %>%
+  dplyr::rename("TD Success Rate"= td_success_perc) %>%
+  dplyr::rename("FG Success Rate"= fg_success_perc) %>%
   kbl() %>% 
   kable_paper("striped") %>% 
   add_header_above(c("Two Minute Drill Success Rates" = 5)) 
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 drive_summary_data %>% 
   group_by(season) %>%
   summarize(season, num_td_drives= sum(td==1), num_fg_drives= sum(fg==1), num_drives=n(), td_success_perc= num_td_drives/num_drives, fg_success_perc= num_fg_drives/num_drives ) %>% 
@@ -157,6 +164,11 @@ drive_summary_data %>%
   add_header_above(c("2-minute Drills in the last 4 Seasons" = 6))  
 ```
 
+Now why should we take a look at this specific aspect of football? A successful 2-minute drill could have massive impacts on the probability of the team winning the game. Let me remind you of week 10 in 2020. The Buffalo Bills drive the length of the field, managing their own two minute drill. Josh Allen and the Bills end the drive by finding the endzone when Allen slings a beautiful 40 yard dot to his favorite target Stefon Diggs with just over 30 seconds left in the game. There was a 90% probability that the Bills just secured the win, but the Cardinals had other plans.
+
+In a mere 3 plays, the Cardinals marched down to the 43 yard line in Bills territory. The rest will go down as one of the greatest plays in NFL history. Murray scrambles out of the pocket and heaves one down the field to a triple teamed DeAndre Hopkins who reaches up and snags the Bills hopes. Although a little luck was involved in this drive, the Cardinals effectively managed the amount of time they were given and won the game despite the statistics. That is what a great two minute drill drive can do for a team any given week.
+
+Here we can see the quarterbacks that have the best rate of scoring either scoring a field goal or a touchdown over the past 4 seasons. Those closer to the top left show us that they are efficient when the clock strike below 2.
 
 ```{r, echo=FALSE}
 drive_summary_data %>%
@@ -205,8 +217,12 @@ drive_summary_data %>%
 
 ```
 
+<<<<<<< HEAD
 
 ```{r, echo = FALSE}
+=======
+```{r include=FALSE}
+>>>>>>> 37022aea832c104d9849324ac9c7d199478e1471
 # qbr // score
 
 drive_summary_data %>%  
@@ -232,7 +248,11 @@ drive_summary_data %>%
 
 
 
+<<<<<<< HEAD
 ```{r, echo = FALSE}
+=======
+```{r, include=FALSE, warning=FALSE, message=FALSE}
+>>>>>>> 37022aea832c104d9849324ac9c7d199478e1471
 # qbr // compl perc
  
 drive_summary_data %>%
@@ -249,7 +269,11 @@ drive_summary_data %>%
 
 
 
+<<<<<<< HEAD
 ```{r, echo = FALSE}
+=======
+```{r, include=FALSE, message=FALSE, warning=FALSE}
+>>>>>>> 37022aea832c104d9849324ac9c7d199478e1471
 # tot yds in drive (x) // amt of time left (ms drive gamenstart from ben code) (y) , score as color or facet
 
 # game time var = drive_game_clock_start

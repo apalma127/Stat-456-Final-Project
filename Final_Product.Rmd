@@ -48,14 +48,6 @@ library(ROCR)
 
 # Introduction 
 
-What is the two minute drill?
-
-Why is it important? 
-
-3 - 4 intro visualizations investigating interesting behavior....
-
-specifically ones that directly have implications upon the outcome (score?)
-
 If you ever want to watch the greatest minds of the football world prove that they are elite, look no further than a close game with 2 minutes or less left on the clock. The "2-minute Drill" has been a staple tactic employed by teams for almost as long as the game has been around. Wikipedia defines this style of hurry-up offense as a "high-pressure and fast-paced situational strategy where a team will focus on clock management, maximizing the number of plays available for a scoring attempt before a half (or game) expires." When teams perform the 2-minute drill, you should expect them to manage the clock using timeouts and plays that eliminate a running clock. You can expect a two minute drill drive in about 1 in 5 games, so it makes sense why these drives are so important.
 
 ```{r, include=FALSE}
@@ -244,41 +236,6 @@ drive_summary_data %>%
 ```
 
 
-
-```{r, echo = FALSE}
-# qbr // compl perc
- 
-drive_summary_data %>%
-   ggplot(aes(x = qbr_total, y = completion_perc)) +
-   geom_point() +
-   geom_smooth()
-
-drive_summary_data %>%
-   ggplot(aes(y = qbr_total, x = completion_perc)) +
-   geom_point() +
-   geom_smooth()
-
-```
-
-
-
-```{r, echo = FALSE}
-
-# tot yds in drive (x) // amt of time left (ms drive gamenstart from ben code) (y) , score as color or facet
-
-# game time var = drive_game_clock_start
-
-
- drive_summary_data %>%
-   ggplot(aes(x = qbr_total, y = completion_perc)) +
-    facet_wrap(~score) +
-   geom_point() +
-   geom_smooth()
-
-
-
-```
-
 We will explore the relationship between football stats in our set and the score outcome of two minute drills from the 2018 - 2021 seasons.  
 
 We will do so using primarily a logisitic regression and will also explore random forests and boosted trees to ensure we explored all other options.  
@@ -327,7 +284,6 @@ drive_summary_data %>%
 ```
 
 
-
 ## Lasso Logisitic Regression 
 
 Our primary model we will be focusing on is a Logistic Regression.  This model specializes in predicting probabilities of our outcome, not just the outcome.  That way with this model, we can not only see whether it predicts a score or not but we can see and have access to the probabilities it used to predict the outcome.  
@@ -365,21 +321,7 @@ drive_two_min_testing <- testing(drive_two_min_split)
 
 
 ```
-
-We had to do some data cleaning work to prep our data for modeling.  This primarily centered around removing NA values and replacing them with appropriate substitutes whether it be 0 in some cases or the average of the column etc.  
-
-Next, the data was split into a training and testing set to ensure we were not overfitting our model to just our current set.  
   
-**Recipe and Pre-processing** 
-
-
-
-
-
-
-
-
-
 
 ```{r, include=FALSE}
 drive_two_min_training %>% 
@@ -389,7 +331,6 @@ drive_two_min_training %>%
 drive_two_min_training %>%
 count(score)
 ```
-
 
 
 ```{r, echo = FALSE}
@@ -416,9 +357,7 @@ lasso_recipe %>%
 ```
 
 
-**Lasso Model and WF**
-
-```{r, echo = FALSE}
+```{r, include = FALSE}
 lasso_mod  <- 
   logistic_reg(mixture = 1) %>% 
   set_engine("glmnet") %>% 
@@ -431,7 +370,6 @@ lasso_wf <-  workflow() %>%
 
 lasso_wf
 ```
-
 
 
 ```{r, include=FALSE}
@@ -455,6 +393,11 @@ lasso_tune <-
     control = control_stack_grid())
 ```
 
+
+Below are the results of out 5 fold cross validation from our modeling.  In short, we separated the data into two groups: one to build the model off (75%) and the other to test and see how well the model works.
+
+Each fold is using a different part of the 75% of the training set to build the model and testing upon the rest.  Over and over and over to amass tons of data on the best logistic regression model.  
+
 ```{r, echo = FALSE}
 
 lasso_tune %>% 
@@ -468,6 +411,7 @@ lasso_tune %>%
 
 ```
 
+Those differnt fold accuracies were also used to test using a different penalty parameter for lasso, which in this case helps to determine what the insignificance cut off is for throwing out "indeterminate" variables.  The accuracies appear to be quite high for most penalties.   
 
 ```{r, echo = FALSE}
 lasso_tune %>% 
@@ -482,6 +426,7 @@ lasso_tune %>%
   labs(x = "penalty", y = "accuracy")
 ```
 
+The goal of modeling is to extract our most accurate model and its associated penalty so that we can finalize the model and interpret some meaning.  
 
 ```{r, echo = FALSE}
 lasso_tune %>% 
@@ -490,6 +435,8 @@ lasso_tune %>%
   kable_paper("striped") %>% 
   add_header_above(c("Lasso Log Reg Best Accuracy Models" = 7)) 
 ```
+
+The best penalty which maximized our accuracy is below and will be directly input to finalize our model.   
 
 ```{r, echo = FALSE}
 best_param <- lasso_tune %>% 
@@ -502,13 +449,14 @@ best_param %>%
 ```
 
 
-**Lasso Final Optimized Model**
 
 ```{r, echo = FALSE}
 lasso_final_wf <- lasso_wf %>% 
   finalize_workflow(best_param)
 lasso_final_wf
 ```
+
+Now for some interpretation and meaning....below we have the coefficients of each variable from the logisitc regression.  Normally in log odds form, we exponentiated the variables to now have them in an odds and odds ratio form, a much more interpretable form.    
 
 ```{r, echo = FALSE}
 lasso_final_mod <- lasso_final_wf %>% 
@@ -525,12 +473,11 @@ lasso_final_mod %>%
   add_header_above(c("Lasso Log Reg Finalized Model Coefficients" = 2)) 
 ```
 
-Above, you can see the logistic regression model output for all of our variables and their coefficients.  The coefficients have been transformed, by exponentiation, to make them more interpretable.    
+Above, you can see the logistic regression model output for all of our variables and their coefficients.  
 
 Generally, if a coefficient is above one it shows a positive impact upon the likelihood of a two minute drill drive resulting in success.  
 
 A coefficent value of one indicates no change.
-
 And a coefficient value of less than one means an increase in that variable results in a lesser chance of scoring.  
 
 Variables that **positively** impact the likelihood of scoring:
@@ -637,9 +584,9 @@ With this great and accurate model, we put it to the test with a recent drive fr
 drive_two_min_training
 ```
 
-Famous Two Min Drill in CFB CFP Finals:
+Predicting with our model...
 
-(2) Clemson vs (1) Alabama: Jan 9, 2017 
+**(2) Clemson vs (1) Alabama: Jan 9, 2017** 
 
 31-28 Alabama with 2:01 left in 4Q
 Clemson ball on Clem 32, 68 yards to go to win the game
@@ -651,7 +598,7 @@ Data was obtained from ESPN's cache of play by play ....
 some unavailable data at the time like game qbr has an average of the season for the passer
 
 
-```{r}
+```{r, echo = FALSE}
 watson_to_renfrow <- tribble(~qbr_raw, ~qbr_total, ~pass_tot_yds, ~tot_yds, ~ydsnet, ~rush_yds_tot, ~completion_perc, ~run_plays, ~pass_plays, ~drive_yards_penalized, ~drive_game_clock_start, ~yards_to_go_start, ~score,
                      104.5, 104.5, 60, 68, 68, 1, 0.6667, 1, 9, 7, 127, 68, 1)
 watson_to_renfrow %>%
@@ -662,7 +609,7 @@ watson_to_renfrow %>%
 
 ```
 
-```{r}
+```{r, echo = FALSE}
 predict(lasso_final_mod, new_data = watson_to_renfrow) %>%
     kbl() %>% 
   kable_paper("striped") %>% 
@@ -674,10 +621,12 @@ predict(lasso_final_mod, new_data = watson_to_renfrow) %>%
 **You can see our model predicts a score correctly!**
 
 
-For the reasons above, we feel very comfortbale with the highly accurate and interpretable Lasso Log Regression.  To ensure we weren't missing a homerun with any other model types, we also explored modeling with two different decision tree applications.  
+For the reasons above, we feel very comfortable with the highly accurate and interpretable Lasso Log Regression.  To ensure we weren't missing a home run with any other model types, we also explored modeling with two different decision tree applications.  
 
 
 ## Decision Tree -- Random Forest
+
+The next model we will briefly touch upon is a decision tree, specifically a random forest model.  This model type uses a series of decision branch offs which work to split based upon significant variables.  
 
 ```{r, include = FALSE}
 
@@ -733,14 +682,8 @@ rf_tune <-
     control = control_stack_grid())
 ```
 
+Performing a similar process as above, we were able to pull our overall accuracy from our best model and our ROC AUC as well.  We can see a decently high 80% accuracy rate and 88% ROC AUC.    
 
-```{r, echo = FALSE}
-rf_tune %>%
-  select_best(metric = "accuracy") %>%
-  kbl() %>% 
-  kable_paper("striped") %>% 
-  add_header_above(c("Decision Tree Random Forest Best Model" = 3))
-```
 
 ```{r, echo = FALSE}
 rf_tune %>%
@@ -751,9 +694,49 @@ rf_tune %>%
   add_header_above(c("Decision Tree Random Forest Best Model" = 8))
 ```
 
+```{r, echo = FALSE}
+rf_tune %>%
+  select_best(metric = "accuracy") %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Decision Tree Random Forest Best Model" = 3))
+```
+
+
+```{r}
+rf_tune %>% 
+  collect_metrics() %>% 
+  filter(.metric == "accuracy") %>% 
+  ggplot(aes(x = min_n, y = mean)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Min Num of Trees", y = "accuracy")
+```
+
+```{r}
+rf_tune %>% 
+  collect_metrics() %>% 
+  filter(.metric == "accuracy") %>% 
+  ggplot(aes(x = mtry, y = mean)) +
+  geom_point() +
+  geom_line() +
+  labs(x = "Mtry", y = "accuracy")
+```
+
+You can see a goofier looking accuracy chart as the tuning parameters here are related to how the tree decides cut offs including minimum number of trees.  You can see from our selected best model the min_n optimized value of 2 and mtry value of 6 representing the peak accuracy values still.   
+
+This model was lacking in interpretability in a sense that we desired a more standard regression output as provided by a logistic regression above. 
+
+Yet, this is another model option for future work.  
 
 
 ## Boosted Decision Tree
+
+**BEN** --------------------------------------------------------------------------------
+
+what is a boost tune for a tree? what is being tuned?
+
+**BEN** --------------------------------------------------------------------------------
 
 ```{r, echo = FALSE}
 xgboost_spec <-
@@ -795,13 +778,11 @@ boost_tune <- xgboost_workflow %>%
 ```
 
 
-```{r, echo = FALSE}
-boost_tune %>%
-  select_best(metric = "accuracy") %>%
-  kbl() %>% 
-  kable_paper("striped") %>% 
-  add_header_above(c("Decision Tree Boosted Best Model" = 2))
-```
+**BEN** --------------------------------------------------------------------------------
+
+what are the metrics? how do they compare
+
+**BEN** --------------------------------------------------------------------------------
 
 ```{r, echo = FALSE}
 boost_tune %>%
@@ -812,8 +793,25 @@ boost_tune %>%
   add_header_above(c("Decision Tree Boosted Best Accuracy Models" = 7)) 
 ```
 
+```{r, echo = FALSE}
+boost_tune %>%
+  select_best(metric = "accuracy") %>%
+  kbl() %>% 
+  kable_paper("striped") %>% 
+  add_header_above(c("Decision Tree Boosted Best Model" = 2))
+```
+
+
+**BEN** --------------------------------------------------------------------------------
+
+wrap up ... why did we not go with a boosted model?
+
+**BEN** --------------------------------------------------------------------------------
+
 
 # Comparing Model Performance
+
+We will take a peak at some overall statistics from all three models to compare them across the board.  
 
 ```{r, echo = FALSE}
 lasso_tune %>% 
@@ -835,15 +833,8 @@ Avg_Accuracylr
 ```
 
 **Log Reg Avg Accuracy = 0.803129**
-True Pos Rate :
 
-
-
-
-
-
-
-```{r, include = FALSE}
+```{r, echo = FALSE}
 rf_tune %>% 
   collect_predictions() %>% 
   group_by(id, mtry, min_n) %>% 
@@ -864,7 +855,6 @@ Avg_Accuracyrf
 ```
 
 **Random Forest Avg Accuracy = 0.8103007**
-
 
 
 ```{r, echo = FALSE}
@@ -889,18 +879,19 @@ Avg_Accuracybb
 
 **Boosted Trees Avg Accuracy = 0.7645666**
 
-Here you can see that the best and most interpretable model for our case is the lgositic regression as it has the highest accuracy while maintaining a strong true positive rate.    
+All models seem to have high accuracies but Log Reg and Random Forest are roughly equal around 80%. 
 
+When factoring in our desired outcome with standrd coefficents, and taking into account the much higher true positive rate in the log reg output, we have much more confidence in our selection of the logisitc regression model and stand by our analysis as appropriate  
 
 # Takeaways 
 
+**BEN** --------------------------------------------------------------------------------
 What did we uncover about two min drills?
 When are they more successful? When are they less? What vars are the most important?
+**BEN** --------------------------------------------------------------------------------
+
 
 
 # Data Ethics and Repercussion of Analysis
 
-We see no potenital harm for this analysis.  ________
-
-
-
+We see no potential harm for this analysis.  We were very open about how we performed our analysis with the data and goal of the project being benign in scope.  We see no negative uses of this data and see it only having possible upside with more stats reliance.  Better equipped teams and offenses will lead to more in-game action and better ratings.  

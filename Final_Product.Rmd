@@ -10,7 +10,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-#knitr::opts_chunk$set(message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(message=FALSE, warning=FALSE)
 ```
 
 ```{r, error=FALSE, include=FALSE}
@@ -45,12 +45,6 @@ library(margins)     # to calculate Average Marginal Effects
 library(ROCR) 
 ```
 
-```{r, include=FALSE}
-pbp_2018_2021 <- load_pbp(2018:2021)
-nfl_qbr_weekly <- readr::read_csv("https://raw.githubusercontent.com/nflverse/espnscrapeR-data/master/data/qbr-nfl-weekly.csv")
-nfl_qbr_weekly<-nfl_qbr_weekly %>% 
-  filter(season==2018:2021)
-```
 
 # Introduction 
 
@@ -63,6 +57,11 @@ Why is it important?
 specifically ones that directly have impications upon the outcome (score?)
 
 ```{r, include=FALSE}
+pbp_2018_2021 <- load_pbp(2018:2021)
+nfl_qbr_weekly <- readr::read_csv("https://raw.githubusercontent.com/nflverse/espnscrapeR-data/master/data/qbr-nfl-weekly.csv")
+nfl_qbr_weekly<-nfl_qbr_weekly %>% 
+  filter(season==2018:2021)
+
 Two_min_drill <- pbp_2018_2021 %>% 
   filter(half_seconds_remaining<120, as.numeric(ms(drive_game_clock_start))<150) 
   
@@ -78,10 +77,7 @@ Two_min_drill %>%
   mutate(rush_attempt = ifelse(is.na(rush_attempt), 0, rush_attempt)) %>% 
   mutate(pass_attempt = ifelse(is.na(pass_attempt), 0, pass_attempt)) %>%
   summarize(num_plays= n(), num_rush=sum(rush_attempt), num_pass= sum(pass_attempt))
-```
 
-
-```{r, include=FALSE}
 two_min_new <- Two_min_drill %>% 
   group_by(game_id, drive) %>%
   mutate(td = ifelse(fixed_drive_result=='Touchdown', 1, 0),
@@ -89,10 +85,7 @@ two_min_new <- Two_min_drill %>%
   score= ifelse(td+fg==1, 1,0)) %>%
   right_join(nfl_qbr_weekly, by = c("week" = "game_week", "posteam"="team_abb", "season" = "season")) %>% 
   ungroup()
-```
 
-
-```{r, include=FALSE}
 getmode <- function(v) {
     v <- na.rm()
    uniqv <- unique(v)
@@ -100,13 +93,11 @@ getmode <- function(v) {
 }
 
 two_min_new <- two_min_new[!is.na(two_min_new$passer), ] 
-
-```
-
-
-```{r, include=FALSE}
 two_min_new <- two_min_new[!is.na(two_min_new$passer), ] 
+
+
 ```
+
 
 
 ```{r, include=FALSE}
@@ -187,18 +178,6 @@ drive_summary_data %>%
 
 ```{r, echo = FALSE}
 drive_summary_data %>%
-  ggplot(aes(x=qbr_total, y=wp)) + 
-  facet_wrap(~score) +
-  geom_point()+
-  geom_smooth() +
-  labs(x="Total QBR for that week",
-       y= "Current Winning Percentage during the Drive",
-       title = "Does scoring(TD or FG) on a 2-Minute Drill Drive increase Win Percentage?",
-       caption = "Data: @nflfastR",
-       color= "Scored?")+
-  scale_color_manual(labels = c("No", "Yes"), values = c("blue", "red"))
-
-drive_summary_data %>%
   ggplot(aes(x=qbr_total, y=wp, color=score))+
   geom_point()+
   labs(x="Total QBR for that week",
@@ -210,33 +189,50 @@ drive_summary_data %>%
 
 ```
 
-```{r}
+
+```{r, echo = FALSE}
+drive_summary_data %>%
+  ggplot(aes(x=qbr_total, y=wp)) + 
+  facet_wrap(~score) +
+  geom_point()+
+  geom_smooth() +
+  labs(x="Total QBR for that week",
+       y= "Current Winning Percentage during the Drive",
+       title = "Does scoring(TD or FG) on a 2-Minute Drill Drive increase Win Percentage?",
+       caption = "Data: @nflfastR",
+       color= "Scored?")+
+  scale_color_manual(labels = c("No", "Yes"), values = c("blue", "red"))
+
+```
+
+
+```{r, echo = FALSE}
 # qbr // score
 
 drive_summary_data %>%  
   ggplot(aes(x = qbr_total, y = score)) +
   geom_boxplot()
 
-drive_summary_data %>%  
-  ggplot(aes(x = qbr_total)) +
-  geom_histogram(bins = 40) +
-  geom_vline(data = filter(drive_summary_data, score=="0"), aes(xintercept= mean(qbr_total)), colour="blue") +
-  geom_vline(data = filter(drive_summary_data, score=="1"), aes(xintercept= mean(qbr_total)), colour="blue") +
-  facet_wrap(~score) 
-
-drive_summary_data %>%  
-  ggplot(aes(x = qbr_total)) +
-  geom_freqpoly(bins = 40) + 
-  geom_vline(data = filter(drive_summary_data, score=="0"), aes(xintercept= mean(qbr_total)), colour="blue") +
-  geom_vline(data = filter(drive_summary_data, score=="1"), aes(xintercept= mean(qbr_total)), colour="blue") +
-  facet_wrap(~score) 
+# drive_summary_data %>%  
+#   ggplot(aes(x = qbr_total)) +
+#   geom_histogram(bins = 40) +
+#   geom_vline(data = filter(drive_summary_data, score=="0"), aes(xintercept= mean(qbr_total)), colour="blue") +
+#   geom_vline(data = filter(drive_summary_data, score=="1"), aes(xintercept= mean(qbr_total)), colour="blue") +
+#   facet_wrap(~score) 
+# 
+# drive_summary_data %>%  
+#   ggplot(aes(x = qbr_total)) +
+#   geom_freqpoly(bins = 40) + 
+#   geom_vline(data = filter(drive_summary_data, score=="0"), aes(xintercept= mean(qbr_total)), colour="blue") +
+#   geom_vline(data = filter(drive_summary_data, score=="1"), aes(xintercept= mean(qbr_total)), colour="blue") +
+#   facet_wrap(~score) 
 
 
 ```
 
 
 
-```{r}
+```{r, echo = FALSE}
 # qbr // compl perc
  
 drive_summary_data %>%
@@ -244,11 +240,16 @@ drive_summary_data %>%
    geom_point() +
    geom_smooth()
 
+drive_summary_data %>%
+   ggplot(aes(y = qbr_total, x = completion_perc)) +
+   geom_point() +
+   geom_smooth()
+
 ```
 
 
 
-```{r}
+```{r, echo = FALSE}
 # tot yds in drive (x) // amt of time left (ms drive gamenstart from ben code) (y) , score as color or facet
 
 # game time var = drive_game_clock_start
@@ -495,47 +496,57 @@ lasso_final_wf <- lasso_wf %>%
 lasso_final_wf
 ```
 
-Below, you can see the logistic regression model output for all of our variables and their coefficients.  
-
-**when holding all other variables constant... **
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ```{r, echo = FALSE}
 lasso_final_mod <- lasso_final_wf %>% 
   fit(data = drive_two_min_training)
 
+
 lasso_final_mod %>% 
   pull_workflow_fit() %>% 
-  tidy() %>%
+  tidy() %>% 
+  select(-penalty) %>%
+  mutate(estimate = exp(estimate)) %>% #for odds ratio
   kbl() %>% 
   kable_paper("striped") %>% 
-  add_header_above(c("Lasso Log Reg Finalized Model Coefficients" = 3)) 
+  add_header_above(c("Lasso Log Reg Finalized Model Coefficients" = 2)) 
 ```
 
+Above, you can see the logistic regression model output for all of our variables and their coefficients.  The coefficients have been transformed, by exponentiation, to make them more interpretable.    
+
+Generally, if a coefficient is above one it shows a positive impact upon the likelihood of a two minute drill drive resulting in success.  
+
+A coefficent value of one indicates no change.
+
+And a coefficient value of less than one means an increase in that variable results in a lesser chance of scoring.  
+
+Variables that **positively** impact the likelihood of scoring:
+
+- qbr
+- total yards
+- yards net -- **LARGEST positive impact upon score outcome**
+- total rush yards
+- drive yards penalized
+
+Variables that **negatively** impact the likelihood of scoring:
+
+- total pass yards
+- run plays
+- drive game clock 
+- yards to go -- **LARGEST negative impact upon score outcome**
+
+
+You can see the result of yards net having the largest impact upon score outcome in the Variable Importance plot below.  
+
+The massive positive impact upon score outcome is nearly matched by the massive negative impact upon scoring derived from the yards to go variable, which had the largets negatively correlated variable coefficient above.  
+
+You may notice more variables included on the VI plot than coefficeints above.  That is because the lasso approach regularized and shrunk the leadt contributing variables coefficients to basically zero, as seen with these additional variables being quite unimportant to predicting score outcome.  
 
 ```{r, echo = FALSE}
 lasso_final_mod %>% 
   pull_workflow_fit() %>% 
   vip()
 ```
-
+Our model's best fitting model was quite well in prediction with a strong 86% accuracy.  Additionally, its ROC AUC, or the area under the curve, is quite high as well at 88% denoting a high level of confidence that the model iwll be able to distinguish between the score and no score class (88% confident to be exact).  
 
 ```{r, echo = FALSE}
 lasso_test <- lasso_final_wf %>% 
@@ -548,8 +559,7 @@ lasso_test %>%
   add_header_above(c("Lasso Log Reg Best Model Accuracy and ROC" = 4)) 
 ```
 
-**ROC-AUC is a performance measurement for the classification problem at various thresholds settings. ROC_AUC tells how much the model is capable of distinguishing between classes. The trained logistic regression model has a ROC-AUC of ______**
-
+We can dig a bit deeper into how well the model predicts by looking at how the model predicts on certain specific instances from our testing set.  Along with predicted class and actual class, you can also see the probability associated with each class leading to the prediction, with 50% as the threshold.   
 
 ```{r, echo = FALSE}
 collect_predictions(lasso_test) %>%
@@ -559,6 +569,8 @@ collect_predictions(lasso_test) %>%
 
 ```
 
+We can also look at our predictions in the aggreagte with a matrixed table.  
+
 
 ```{r, echo = FALSE}
 preds <-
@@ -567,8 +579,14 @@ conf_mat(preds, .pred_class, score)
   
 ```
 
+Other importnat model metrics are laid out in the table below, with these metrics also proving how well the model predicts.
 
+Metrics to Note: 
 
+**Sens = Sensitivity -- Ratio between how much was classified as a score to how much was actually a score of that**
+**Spec = Specificity -- Ratio between how much was classified as not a score to how much was actually not a score of that**
+**Precision -- Ratio of much was correctly classified as a score out of all scores **
+**F meas -- Indicates classification strength**
 
 ```{r, echo = FALSE}
 custom_metrics <- metric_set(accuracy, sens, spec, precision, f_meas)
@@ -580,39 +598,38 @@ custom_metrics(preds, truth = score,
   add_header_above(c("Lasso Log Reg Finalized Model Metrics" = 3)) 
 ```
 
-**Sens -- Ratio between how much classified as score to how much was actually a score**
-**Spec -- Ratio between how much classified as no score to how much was actually no score**
-**Precision -- How much were correctly classified as a score out of all scores?**
-**F meas -- The F1 score is about 0.818, which indicates that the trained model has a classification strength of 81.8%%.**
-
-
+The relationship between sensitivity and specificity can be seen here.  The dotted line in the middle is what the roc curve wpuld look like if the model predicted based on random 50/50 choice.  The further our line is away from this line, the better the model as we see.  
 
 ```{r, echo = FALSE}
 preds %>%
-  roc_curve(truth = score, .pred_0) %>%
+  roc_curve(truth = score, .pred_1) %>%
   autoplot()
 ```
 
+Below is a lay out of what probabilities in this model resulted in certain predictions.  You can see the impact of the 0.5 threshold as hardly any 1 predictions occurr where the probability of being 1 is less than 0.5 but it jumps after crossing 0.5.  
 
 ```{r, echo = FALSE}
+
+
 preds %>%
   ggplot() +
-  geom_density(aes(x = .pred_0, fill = score), 
+  geom_density(aes(x = .pred_1, fill = score), 
                alpha = 0.5)
 ```
 
+With this great and accurate model, we put it to the test with a recent drive from the College Football playoffs.  
 
 ```{r, include = FALSE}
 drive_two_min_training
 ```
 
-Famous Two in Drill in CFB CFP Finals:
+Famous Two Min Drill in CFB CFP Finals:
 
 (2) Clemson vs (1) Alabama: Jan 9, 2017 
 
 31-28 Alabama with 2:01 left in 4Q
 Clemson ball on Clem 32, 68 yards to go to win the game
-Clemson ends up driving all 68 yards for a Deshaun Watson pass to Hunte Renfrow for a TD to win the game with 1 second left. 
+Clemson ends up driving all 68 yards for a Deshaun Watson pass to Hunter Renfrow for a TD to win the game with 1 second left. 
 
 How does our best model, the logistic regression predict this? 
 
@@ -640,7 +657,10 @@ predict(lasso_final_mod, new_data = watson_to_renfrow) %>%
 ```
 
 
-**You can see our model predicts a score here correctly!**
+**You can see our model predicts a score correctly!**
+
+
+For the reasons above, we feel very comfortbale with the highly accurate and interpretable Lasso Log Regression.  To ensure we weren't missing a homerun with any other model types, we also explored modeling with two different decision tree applications.  
 
 
 ## Decision Tree -- Random Forest
@@ -809,7 +829,7 @@ True Pos Rate :
 
 
 
-```{r, echo = FALSE}
+```{r, include = FALSE}
 rf_tune %>% 
   collect_predictions() %>% 
   group_by(id, mtry, min_n) %>% 
@@ -823,7 +843,7 @@ rf_tune %>%
   add_header_above(c("Decision Tree -- Random Forest Models Performance" = 5)) 
 ```
 
-```{r, echo = FALSE}
+```{r, include = FALSE}
 Avg_Accuracyrf <- (0.8058140 + 0.8195560 + 0.8007400 + 0.8242072 + 0.8059197 + 0.7779070 + 0.8427061 + 0.8195560 + 0.7963002) / 9
 
 Avg_Accuracyrf
@@ -847,7 +867,7 @@ boost_tune %>%
   add_header_above(c("Decision Tree -- Boosted Tree Models Performance" = 4)) 
 ```
 
-```{r, echo = FALSE}
+```{r, include = FALSE}
 Avg_Accuracybb <- (0.6899577 + 0.7595137 + 0.7642706 + 0.7642706 + 0.7642706 + 0.7642706 + 0.7315011 + 0.7497886 + 0.8243129 + 0.8335095) / 10
 
 Avg_Accuracybb
@@ -857,26 +877,16 @@ Avg_Accuracybb
 
 Here you can see that the best and most interpretable model for our case is the lgositic regression as it has the highest accuracy while maintaining a strong true positive rate.    
 
-# Data Ethics and Repercussion of Analysis
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Conclusion 
+# Takeaways 
 
 What did we uncover about two min drills?
 When are they more successful? When are they less? What vars are the most important?
+
+
+# Data Ethics and Repercussion of Analysis
+
+We see no potenital harm for this analysis.  ________
+
+
+

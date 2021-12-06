@@ -180,18 +180,7 @@ drive_summary_data %>%
   theme_bw()
 ```
 
-```{r, echo = FALSE}
-drive_summary_data %>%
-  ggplot(aes(x=qbr_total, y=wp, color=score))+
-  geom_point()+
-  labs(x="Total QBR for that week",
-       y= "Current Winning Percentage during the Drive",
-       title = "Does scoring(TD or FG) on a 2-Minute Drill Drive increase Win Percentage?",
-       caption = "Data: @nflfastR",
-       color= "Scored?")+
-  scale_color_manual(labels = c("No", "Yes"), values = c("blue", "red"))
-
-```
+There are few positions that require such a responsibility as an NFL Quarterback. The only other position in team sports that stand out to me is an MLB Pitcher. As you can see from these two plots, the better the QB plays that week, the higher probability the team has at completing that 2-minute drill with new points on the board. Every decision a Quarterback makes during those final 2 minutes could have massive repercussions, so its important the team has the right guy for the job. 
 
 
 ```{r, echo = FALSE}
@@ -477,7 +466,7 @@ Above, you can see the logistic regression model output for all of our variables
 
 Generally, if a coefficient is above one it shows a positive impact upon the likelihood of a two minute drill drive resulting in success.  
 
-A coefficent value of one indicates no change.
+A coefficient value of one indicates no change.
 And a coefficient value of less than one means an increase in that variable results in a lesser chance of scoring.  
 
 Variables that **positively** impact the likelihood of scoring:
@@ -733,11 +722,7 @@ Yet, this is another model option for future work.
 
 ## Boosted Decision Tree
 
-**BEN** --------------------------------------------------------------------------------
-
-what is a boost tune for a tree? what is being tuned?
-
-**BEN** --------------------------------------------------------------------------------
+Similar to the previous model we fit, a Boosted Decision tree creates a series of splits, or branches. The only difference with this type of model is that each tree is NOT independent of the others. This Boosted model takes information from the prior trees, and uses it to create the next splits. 
 
 ```{r, echo = FALSE}
 xgboost_spec <-
@@ -779,11 +764,7 @@ boost_tune <- xgboost_workflow %>%
 ```
 
 
-**BEN** --------------------------------------------------------------------------------
-
-what are the metrics? how do they compare
-
-**BEN** --------------------------------------------------------------------------------
+After finding the best fit boosted model, we can again pull the overall accuracy of the model. Our boosted model shows an accuracy rate of 80.5% with an ROC AUC of 89%. This is almost exactly the same as the random forest.
 
 ```{r, echo = FALSE}
 boost_tune %>%
@@ -802,12 +783,7 @@ boost_tune %>%
   add_header_above(c("Decision Tree Boosted Best Model" = 2))
 ```
 
-
-**BEN** --------------------------------------------------------------------------------
-
-wrap up ... why did we not go with a boosted model?
-
-**BEN** --------------------------------------------------------------------------------
+Again, like the Random Forest model we created, the Boosted model is hard to interpret and actually less accurate than the logistic regression we fit first. It would be much more beneficial to have a model of which we can view each variable and understand how that afects the final prediction. The boosted model lacks that trait.
 
 
 # Comparing Model Performance
@@ -882,15 +858,13 @@ Avg_Accuracybb
 
 All models seem to have high accuracies but Log Reg and Random Forest are roughly equal around 80%. 
 
-When factoring in our desired outcome with standrd coefficents, and taking into account the much higher true positive rate in the log reg output, we have much more confidence in our selection of the logisitc regression model and stand by our analysis as appropriate  
+When factoring in our desired outcome with standard coefficients, and taking into account the much higher true positive rate in the log reg output, we have much more confidence in our selection of the logistic regression model and stand by our analysis as appropriate  
 
 # Takeaways 
 
-**BEN** --------------------------------------------------------------------------------
-What did we uncover about two min drills?
-When are they more successful? When are they less? What vars are the most important?
-**BEN** --------------------------------------------------------------------------------
+By cleaning play by play data, and creating summary statistics relating to each drive that occurred under two minutes, we were able to successfully analyze the importance of the 2-minute Drill in the game of football. Not only did we look into the players that are the "clutchest" under 2 minutes, but created our own model to correctly classify the result of a 2-minute drill drive. From there, we could observe the most important variable to determine what is the most important thing a team can do to end their drive with a score. We show that QBR and number of penalties a team takes during the drive are the most important variable when it comes to team controllable variables. However, if you wanted to predict whether a team can end the drive in a score you should highly consider the number of yards the team has to drive.
 
+I think looking further into each 2 minute drill could lead to even more useful insights. One downfall of our own format is that we didn't create enough variables to summarize each drive. There could be many more drive specific characteristics that could effect the models we created, such as if the team driving is the home or away team and the weather during the game. Nonetheless, we decided to focus only on the on-field aspects of the drive, especially Quarterback play. 
 
 
 # Data Ethics and Repercussion of Analysis

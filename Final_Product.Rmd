@@ -507,6 +507,7 @@ lasso_final_mod %>%
   pull_workflow_fit() %>% 
   vip()
 ```
+
 Our model's best fitting model was quite well in prediction with a strong 86% accuracy.  Additionally, its ROC AUC, or the area under the curve, is quite high as well at 88% denoting a high level of confidence that the model iwll be able to distinguish between the score and no score class (88% confident to be exact).  
 
 ```{r, echo = FALSE}
@@ -827,7 +828,7 @@ lasso_tune %>%
   add_header_above(c("Lasso Models Performance" = 4)) 
 ```
 
-```{r, echo = FALSE}
+```{r, include = FALSE}
 Avg_Accuracylr <- (0.8291755 + 0.8291755 + 0.8291755 + 0.8291755 + 0.8291755 + 0.8291755 + 0.8338266 + 0.8384778 + 0.8198732 + 0.5640592) / 10
 Avg_Accuracylr
 ```
@@ -894,4 +895,4 @@ When are they more successful? When are they less? What vars are the most import
 
 # Data Ethics and Repercussion of Analysis
 
-We see no potential harm for this analysis.  We were very open about how we performed our analysis with the data and goal of the project being benign in scope.  We see no negative uses of this data and see it only having possible upside with more stats reliance.  Better equipped teams and offenses will lead to more in-game action and better ratings.  
+We see no potential harm for this analysis.  We were very open about how we performed our analysis with the data and goal of the project being benign in scope.  We see no negative uses of this data and see it only having possible upside with more stats reliance.  Better equipped teams and offenses will lead to more in-game action, giving NFL fans what they desire.  The only negative impact may be upon defensive specialist players.  

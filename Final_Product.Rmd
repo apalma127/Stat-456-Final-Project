@@ -227,7 +227,7 @@ drive_summary_data %>%
 
 We will explore the relationship between football stats in our set and the score outcome of two minute drills from the 2018 - 2021 seasons.  
 
-We will do so using primarily a logisitic regression and will also explore random forests and boosted trees to ensure we explored all other options.  
+We will do so using primarily a logistic regression and will also explore random forests and boosted trees to ensure we explored all other options.  
 
 # Modeling 
 
@@ -400,7 +400,7 @@ lasso_tune %>%
 
 ```
 
-Those differnt fold accuracies were also used to test using a different penalty parameter for lasso, which in this case helps to determine what the insignificance cut off is for throwing out "indeterminate" variables.  The accuracies appear to be quite high for most penalties.   
+Those different fold accuracies were also used to test using a different penalty parameter for lasso, which in this case helps to determine what the insignificance cut off is for throwing out "indeterminate" variables.  The accuracies appear to be quite high for most penalties.   
 
 ```{r, echo = FALSE}
 lasso_tune %>% 
@@ -445,7 +445,7 @@ lasso_final_wf <- lasso_wf %>%
 lasso_final_wf
 ```
 
-Now for some interpretation and meaning....below we have the coefficients of each variable from the logisitc regression.  Normally in log odds form, we exponentiated the variables to now have them in an odds and odds ratio form, a much more interpretable form.    
+Now for some interpretation and meaning....below we have the coefficients of each variable from the logistic regression.  Normally in log odds form, we exponentiated the variables to now have them in an odds and odds ratio form, a much more interpretable form.    
 
 ```{r, echo = FALSE}
 lasso_final_mod <- lasso_final_wf %>% 
@@ -487,9 +487,9 @@ Variables that **negatively** impact the likelihood of scoring:
 
 You can see the result of yards net having the largest impact upon score outcome in the Variable Importance plot below.  
 
-The massive positive impact upon score outcome is nearly matched by the massive negative impact upon scoring derived from the yards to go variable, which had the largets negatively correlated variable coefficient above.  
+The massive positive impact upon score outcome is nearly matched by the massive negative impact upon scoring derived from the yards to go variable, which had the largest negatively correlated variable coefficient above.  
 
-You may notice more variables included on the VI plot than coefficeints above.  That is because the lasso approach regularized and shrunk the leadt contributing variables coefficients to basically zero, as seen with these additional variables being quite unimportant to predicting score outcome.  
+You may notice more variables included on the VI plot than coefficients above.  That is because the lasso approach regularized and shrunk the least contributing variables coefficients to basically zero, as seen with these additional variables being quite unimportant to predicting score outcome.  
 
 ```{r, echo = FALSE}
 lasso_final_mod %>% 
@@ -497,7 +497,7 @@ lasso_final_mod %>%
   vip()
 ```
 
-Our model's best fitting model was quite well in prediction with a strong 86% accuracy.  Additionally, its ROC AUC, or the area under the curve, is quite high as well at 88% denoting a high level of confidence that the model iwll be able to distinguish between the score and no score class (88% confident to be exact).  
+Our model's best fitting model was quite well in prediction with a strong 86% accuracy.  Additionally, its ROC AUC, or the area under the curve, is quite high as well at 88% denoting a high level of confidence that the model will be able to distinguish between the score and no score class (88% confident to be exact).  
 
 ```{r, echo = FALSE}
 lasso_test <- lasso_final_wf %>% 
@@ -520,7 +520,7 @@ collect_predictions(lasso_test) %>%
 
 ```
 
-We can also look at our predictions in the aggreagte with a matrixed table.  
+We can also look at our predictions in the aggregate with a matrixed table.  
 
 
 ```{r, echo = FALSE}
@@ -530,7 +530,7 @@ conf_mat(preds, .pred_class, score)
   
 ```
 
-Other importnat model metrics are laid out in the table below, with these metrics also proving how well the model predicts.
+Other important model metrics are laid out in the table below, with these metrics also proving how well the model predicts.
 
 Metrics to Note: 
 
@@ -549,7 +549,7 @@ custom_metrics(preds, truth = score,
   add_header_above(c("Lasso Log Reg Finalized Model Metrics" = 3)) 
 ```
 
-The relationship between sensitivity and specificity can be seen here.  The dotted line in the middle is what the roc curve wpuld look like if the model predicted based on random 50/50 choice.  The further our line is away from this line, the better the model as we see.  
+The relationship between sensitivity and specificity can be seen here.  The dotted line in the middle is what the roc curve would look like if the model predicted based on random 50/50 choice.  The further our line is away from this line, the better the model as we see.  
 
 ```{r, echo = FALSE}
 preds %>%
@@ -557,7 +557,7 @@ preds %>%
   autoplot()
 ```
 
-Below is a lay out of what probabilities in this model resulted in certain predictions.  You can see the impact of the 0.5 threshold as hardly any 1 predictions occurr where the probability of being 1 is less than 0.5 but it jumps after crossing 0.5.  
+Below is a lay out of what probabilities in this model resulted in certain predictions.  You can see the impact of the 0.5 threshold as hardly any 1 predictions occur where the probability of being 1 is less than 0.5 but it jumps after crossing 0.5.  
 
 ```{r, echo = FALSE}
 
@@ -783,7 +783,7 @@ boost_tune %>%
   add_header_above(c("Decision Tree Boosted Best Model" = 2))
 ```
 
-Again, like the Random Forest model we created, the Boosted model is hard to interpret and actually less accurate than the logistic regression we fit first. It would be much more beneficial to have a model of which we can view each variable and understand how that afects the final prediction. The boosted model lacks that trait.
+Again, like the Random Forest model we created, the Boosted model is hard to interpret and actually less accurate than the logistic regression we fit first. It would be much more beneficial to have a model of which we can view each variable and understand how that affects the final prediction. The boosted model lacks that trait.
 
 
 # Comparing Model Performance
@@ -862,11 +862,11 @@ When factoring in our desired outcome with standard coefficients, and taking int
 
 # Takeaways 
 
-By cleaning play by play data, and creating summary statistics relating to each drive that occurred under two minutes, we were able to successfully analyze the importance of the 2-minute Drill in the game of football. Not only did we look into the players that are the "clutchest" under 2 minutes, but created our own model to correctly classify the result of a 2-minute drill drive. From there, we could observe the most important variable to determine what is the most important thing a team can do to end their drive with a score. We show that QBR and number of penalties a team takes during the drive are the most important variable when it comes to team controllable variables. However, if you wanted to predict whether a team can end the drive in a score you should highly consider the number of yards the team has to drive.
+By cleaning play by play data, and creating summary statistics relating to each drive that occurred under two minutes, we were able to successfully analyze the importance of the 2-minute Drill in the game of football. Not only did we look into the players that are the "clutchest" under 2 minutes, but created our own model to correctly classify the result of a 2-minute drill drive. From there, we could observe the most important variable to determine what is the most important thing a team can do to end their drive with a score. We show that QBR and number of penalties a team takes during the drive are the most important variables when it comes to team controllable variables. However, if you wanted to predict whether a team can end the drive in a score you should highly consider the number of yards the team has to drive.
 
 I think looking further into each 2 minute drill could lead to even more useful insights. One downfall of our own format is that we didn't create enough variables to summarize each drive. There could be many more drive specific characteristics that could effect the models we created, such as if the team driving is the home or away team and the weather during the game. Nonetheless, we decided to focus only on the on-field aspects of the drive, especially Quarterback play. 
 
 
-# Data Ethics and Repercussion of Analysis
+# Data Ethics
 
 We see no potential harm for this analysis.  We were very open about how we performed our analysis with the data and goal of the project being benign in scope.  We see no negative uses of this data and see it only having possible upside with more stats reliance.  Better equipped teams and offenses will lead to more in-game action, giving NFL fans what they desire.  The only negative impact may be upon defensive specialist players.  

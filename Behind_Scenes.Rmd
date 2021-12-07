@@ -138,8 +138,6 @@ drive_summary_data
 **The last bit of cleaning we do is to fix data points related to Aaron Rodgers. The data had him listed as both "Aa.Rodgers" and "A.Rodgers". This would not work to show his overall stats.** 
 
 
-
-
 Here you can see the number of drives that began under 2 minutes and 30 seconds left in the first or second halves from 2018 to today. As you can see, it is not too often that a team successfully completes a drive by scoring points. Just more than 21% of the time, teams have scored at least 3 points by kicking a field goal. While only 10% of the time, teams have reached the endzone for 6.
 
 ```{r}
@@ -338,7 +336,7 @@ drive_two_min_testing <- testing(drive_two_min_split)
 ```
 
 
-**We began our modeling work here with a set seed to ensure we continue to get the same split no matter how much we run this chunk.  We split our data int training and testing to ensure we have extra data to test our model on, to prevent over fitting**
+**We began our modeling work here with a set seed to ensure we continue to get the same split no matter how much we run this chunk.  We split our data into training and testing to ensure we have extra data to test our model on, to prevent over fitting**
 
 
 ```{r}
@@ -348,7 +346,7 @@ count(score)
 ```
 
 
-**To prep for out recipe and modeling, we wanted to peak at the distribution of our outcome variable, score, to see if we needed to up sample if it was lopsided (which is is).**
+**To prep for our recipe and modeling, we wanted to peak at the distribution of our outcome variable, score, to see if we needed to up sample if it was lopsided (which is is).**
 
 
 ```{r}
@@ -467,7 +465,7 @@ lasso_tune %>%
 ```
 
 
-**Using our Lasso tune, we are able to collect and plot our accuracy values associated with our different penalty parameters to help visualize the smallest penalty we can assess all while maximizing accuracy**
+**Using our Lasso tune, we are able to collect and plot our accuracy values associated with our different penalty parameters to help visualize the smallest penalty we can use all while maximizing accuracy**
 
 
 The goal of modeling is to extract our most accurate model and its associated penalty so that we can finalize the model and interpret some meaning.  
@@ -497,7 +495,7 @@ best_param %>%
 ```
 
 
-**We specifically hone in on our sole bets model based on highest accuracy, and can pull its associated penalty parameter to use as our set penalty in our finalized model to come.**
+**We specifically hone in on our sole best model based on highest accuracy, and can pull its associated penalty parameter to use as our set penalty in our finalized model to come.**
 
 
 ```{r}
@@ -568,7 +566,7 @@ lasso_final_mod %>%
 ```
 
 
-**From this final model, we can also plot a variable importance plot and see which variables contributed the most and we3re the most influential when trying to predict score, with this matching the patterns we saw in the coefficients above.**
+**From this final model, we can also plot a variable importance plot and see which variables contributed the most and were the most influential when trying to predict score, with this matching the patterns we saw in the coefficients above.**
 
 
 Our best fitting model was quite well in prediction with a strong 86% accuracy.  Additionally, its ROC AUC, or the area under the curve, is quite high as well at 88% denoting a high level of confidence that the model will be able to distinguish between the score and no score class (88% confident to be exact).  
@@ -697,7 +695,7 @@ watson_to_renfrow %>%
 ```
 
 
-**Here we create our new data set representing the exact drive and scenario listed above and pipe in to display it.**
+**Here we create our new observation representing the exact drive and scenario listed above and pipe in to display it.**
 
 
 ```{r}

@@ -1029,30 +1029,9 @@ We see no potential harm for this analysis.  We were very open about how we perf
 
 # Problems 
 
+A bigger problem we had while cleaning the data was to make sure that all the plays we were trying to look at happened under 2 minutes. We wanted to make sure the data we focused on was correct in that they were all 2-minute drill drives. Since there were no integer variables related to how much time was left, we had to change a character variable in form "10:00" to be in the form of seconds. 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Another problem in the cleaning section arose when we started creating summary drive specific variables to feed into our modeling section. The hardest variable to create was a variable that shows how many yards a team had to drive to reach the endzone at the beginning of that drive. The play by play data had a variable that showed where the drive started. However, it was a character variable in the form "TEN 10" where then first three letters represented which half of the field the ball was in. Using our example "TEN 10", if Tennessee had possession of the ball at that time, they would be in their own territory on the 10 yard line which means they have to get 90 yards to reach the endzone. That made it hard because we had to check that the team who had the ball had the same abbreviation as the letters in the character. If they did we had to extract the numbers from the character and subtract that number from 100. If not, we had to simply extract the numbers. Not all teams have the same length of abbreviation so it was a bit tricky, but I found a function that pulls all letters out of character. 
 
 
 A major problem we had to deal with as it relates to modeling was form of the data.  We needed it to be an exact form with no NAs.  I was not sure how to uniformly replace NAs, doing so differently for different variables.  We had to read a lotttttt of documentation to figure it out but we got there eventually.  Additionally, when initially including passer (QB) in our dataset, we had a big problem when trying to model because the QB names changed yearly and were not the same throughout.  Each fold had concerns as there were new levels in nearly every step.  We had to learn about some new step functions within the lasso recipe that took care of this.  While we ended up scrapping this variable in our model, we also had to read a lot of documentation and talk with Professor Lendway in depth to uncover the error and address it.  Lastly, we ran into a time constraint with our random forest and boosted trees models.  We ended up showing overall metrics for these models and not going too much in to detail on purpose.  Besides the important fact that they weren't in the form we wanted, we also faced a lot of issues with the way our data was presented.  After trying for days, we were unable to finalize models for the rf and boosted models, after tweaking the data so many different ways and trying so many different types of steps and up and down sampling in our recipe.
@@ -1062,21 +1041,6 @@ If we had a couple more weeks, we also would have provided an in depth analysis,
 
 # Most Proud Part
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Ben: The plot showing each quarterbacks number of successful drives compared to total 2-minute drill drives is my most proud point of the project. Using each players headshot, I plotted the number of successful 2-minute drill drives each QB in the league has completed compared to how many drives they have attempted. I have never used an image to plot the data and it took a lot of cleaning and fixing before each headshot matched up with the right QB. Some QBs even showed up multiple times. However, after fixing the data in the cleaning section, I was able to get it to look really nice, and I think it is one of my most professional plots of my time here at Mac. One thing I could have changed is the y-axis. I think I could have made the plot a little bit more informative if I put another more interesting variable on the y-axis. Nonetheless, I think it still turned out great.  
 
 Anthony: My most proud part of the code I focused on was the lasso log reg.  We had errors in so many different places so many different times.  It took days to sort out what was going on and was quite frustrating especially considering the basic nature of the modeling we were attempting.  After finding some crafty ways to manipulate within the recipe, removing NAs, and even removing whole variables that were tipping the model off on the outcome making it wayyyyy to accurate (like fg and td as a proxy for score), we were finally able to finalize a workflow, model, and use the finalized forms to see some really cool and in depth details about our desired model.  

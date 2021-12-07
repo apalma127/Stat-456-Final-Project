@@ -285,15 +285,13 @@ drive_summary_data %>%
 ```
 
 
-**EXPLAIN CODE**
+**This code segments our dataset further.  By grouping by drive and game id, we are able to now look at each tow min drive as one observation as opposed to a collection of plays.  We also mutated and created some new variables which summed and did some basic math to complement the variables we currently have, including our important score indicators as binary outputs (td, fg, and score which is td or fg).**
 
+**One of the most difficult cleaning tasks we found was creating a yards to go start variable, the yards left to go to the endzone from the start of the drive.  In its current form, we had a team name in 3 - 4 characters and a yardline as thr field goes 0 to 50 and then back down to 0.  This new variable removed the characters preceding and used that to calculate yards to go.**
 
+**We then created our primary dataset that we will use in our analysis, drive summary data, which included only the variables we wanted to predict our outcome variable, score.  We tidy'd this up by ensuring the drives are arranged in a logical way, still grouped to represent an observation, with small factor and numeric transformations where needed.**
 
-
-
-
-
-
+**One other difficult task was cleaning and dealing with NAs.  This last couple of lines deal with NAs in the yards to go start as they were derived from simply being a "50" prior, with no characters prior to parse.  Thus, I replaced these values wtih the appropriate "50".**
 
 
 ## Lasso Logisitic Regression 
@@ -319,18 +317,11 @@ drive_summary_data %>%
   count(n_miss_all)
 ```
 
+**We continue working to address pesky NA values... we delt with them similarily as above except we found these NAs to be presnet when that field did not occur. Thus, we replaced these where appropriate with "0".**
 
-**EXPLAIN CODE**
+**We then continued to mold the dataset we will use to analyze by removing variables that did not have predictive power because of their nature or their structure being characters (team, game id, drive, or drive start line) or variables that were too closely tied to our outcome variables (td, fg).**
 
-
-
-
-
-
-
-
-
-
+**We lastly checked to ensure our NA subbing worked, which it did.**
 
 
 ```{r}
@@ -347,40 +338,17 @@ drive_two_min_testing <- testing(drive_two_min_split)
 ```
 
 
-**EXPLAIN CODE**
+**We began our modeling work here with a set seed to ensure we continue to get the same split no matter how much we run this chunk.  We split our data int training and testing to ensure we have extra data to test our model on, to prevent overfitting**
 
-
-
-
-
-
-
-
-
-
-  
 
 ```{r}
-drive_two_min_training %>% 
-  add_n_miss() %>% 
-  count(n_miss_all)
 
 drive_two_min_training %>%
 count(score)
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
+**To prep for out recipe and modeling, we wanted to peak at the distribution of our outcome variable, score, to see if we needed to upsample if it was lopsided (which is is).**
 
 
 ```{r}
@@ -397,17 +365,9 @@ lasso_recipe <- recipe(score ~ .,
 ```
 
 
-**EXPLAIN CODE**
+**We set a seed again to make sure we have reproduceability.  We proceed with our recipe, a necessary part of building our model, by stating what we desire to perform and transforming variables to what they need to be.**
 
-
-
-
-
-
-
-
-
-
+**This model will use all variables from our training set to predict our score outcome, as seen above.  We made sure we adjusted our score outcome by upsampling and making the split more even between score 0 and score 1.... if we did not, the model may have chosen to simply choose the majority class everytime because of how simple and accurate that would be, yet that is a terrible model.  Additionally, we made msure all factors were dummies and we had all predictors normalized and not skewed, minus the outcome variables of course.**
 
 
 ```{r}
@@ -420,16 +380,7 @@ lasso_recipe %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**We pipe into our recipe to peak at how it transforms out training data, ensuring it is how we desire.  We added some special table styling with Kable.  It is clear there has been a lot of normalizing and dummying as we desired.**
 
 
 
@@ -448,17 +399,9 @@ lasso_wf
 ```
 
 
-**EXPLAIN CODE**
+**We create our model here, specifiying our desired type, log reg, and its associated engine, glmnet.  We set to tune our tuning parameter, penalty, which is specific to lasso and how it shrinks and regularizes variables based upon this parameter.  And lastly, we designate our desired type being Classification because score is binary, 0 or 1.**
 
-
-
-
-
-
-
-
-
-
+**We also create our workflow, which combines our model and recipe together into one.**
 
 
 ```{r}
@@ -483,18 +426,9 @@ lasso_tune <-
 ```
 
 
-**EXPLAIN CODE**
+**We set our seed again to reproduce anddesignate our training cross validation to split 5 folds, a pretty standard value.**
 
-
-
-
-
-
-
-
-
-
-
+**We also establish a penalty grid of possible penalty values that we will tune and test to see which best fits our model.  We incorporate this into our lasso tune which uses our work flow (with our model and recipe together) to help us find the rigth penalty parameter for our most accurate and best predicting model.  We specify within this our desire to use 5 folds in this process and set a control grid to ensure we are applying what we want to all resampling objects.**
 
 Below are the results of our 5 fold cross validation from our modeling.  In short, we separated the data into two groups: one to build the model off (75%) and the other to test and see how well the model works.
 
@@ -514,16 +448,7 @@ lasso_tune %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**Here we pipe into our tune to take a look at how our five folds different models performed based upon their different accuracy estimates with their associated different penalty parameters.**
 
 
 Those different folds and their resulting accuracies were also used to try out different penalty parameters for lasso, which in this case helps to determine what the insignificance cut off is for throwing out "indeterminate" variables.  The accuracies appear to be quite high for most penalties.   
@@ -542,16 +467,7 @@ lasso_tune %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**Using our Lasso tune, we are able to collect and plot our accuracy values associated with our different penalty parameters to help visualize the smallest penalty we can assess all while maximizing accuracy**
 
 
 The goal of modeling is to extract our most accurate model and its associated penalty so that we can finalize the model and interpret some meaning.  
@@ -565,16 +481,7 @@ lasso_tune %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**We also pipe into our tune to see our best accuracy metric and its associated penalties and model designations.**
 
 
 The best penalty which maximized our accuracy is below and will be directly input to finalize our model.   
@@ -590,18 +497,7 @@ best_param %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
-
+**We specifically hone in on our sole bets model based on highest accuracy, and can pull its associated penalty parameter to use as our set penalty in our finalized model to come.**
 
 
 ```{r}
@@ -611,16 +507,7 @@ lasso_final_wf
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**Using our previously found penalty based upon best accuracy performance, we use that to pipe into our workflow with our model and recipe and finalize our previously desiganted penalty parameter of "tune" to this btes metric.**
 
 
 Now for some interpretation and meaning....below we have the coefficients of each variable from the logistic regression.  While normally in log odds form, we exponentiated the variable coefficients to now have them in an odds and odds ratio form, a much more interpretable style.    
@@ -641,16 +528,9 @@ lasso_final_mod %>%
 ```
 
 
-**EXPLAIN CODE**
+**With this finalized workflow, we can create a finalized model fitting this to our training data.**
 
-
-
-
-
-
-
-
-
+**Most importantly, we were able to grab the models variable coefficents, exponentiating them to take them from a log odds interpretation to an odds and odds ratio one.  That way, we are able to make more sense of this.**
 
 
 Above, you can see the logistic regression model output for all of our variables and their coefficients.  
@@ -688,16 +568,7 @@ lasso_final_mod %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**From this final model, we can also plot a variable importance plot and see which variables contributed the most and we3re the most influential when trying to predict score, with this matching the patterns we saw in the coefficients above.**
 
 
 Our best fitting model was quite well in prediction with a strong 86% accuracy.  Additionally, its ROC AUC, or the area under the curve, is quite high as well at 88% denoting a high level of confidence that the model will be able to distinguish between the score and no score class (88% confident to be exact).  
@@ -714,16 +585,7 @@ lasso_test %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**We then fit again with this final model now using our previous cross validation split.  We again can collect important metrics from this final model that we built all the way through the lasso process.**
 
 
 We can dig a bit deeper into how well the model predicts by looking at how the model predicts on certain specific instances from our testing set.  Along with predicted class and actual class, you can also see the probability associated with each class leading to the prediction, with 50% as the threshold.   
@@ -737,17 +599,7 @@ collect_predictions(lasso_test) %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
+**This section uses our finalzied and fit model from the previous chunk to predict upon our testing data previously established.  This is a very useful chunk as you can see the details of drives, specifically their outcome, their predicted outcome, and why they had such predicted outcomes with their associated probabilities listed.**
 
 We can also look at our predictions in the aggregate with a matrixed table.  
 
@@ -760,17 +612,7 @@ conf_mat(preds, .pred_class, score)
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
+**With these predictions from our fit above, we can see the final model perfromance in the aggregate with a conf matrix displaying how many predictions were predicted each way and how accurate it was.**
 
 Other important model metrics are laid out in the table below, with these metrics also proving how well the model predicts.
 
@@ -792,16 +634,7 @@ custom_metrics(preds, truth = score,
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**This code does a lot....it grabs very importnat metrics from the finalized and fit model, specifically from when it predicted our testing data.  It uses score as the true metric of score and predicted class to see when these two matched and when they didn't.  It used this matching process to spit out very improtant metrics looking at how the model predicted the positive case, negative case, and in generall all cases.**
 
 
 The relationship between sensitivity and specificity can be seen below  The dotted line in the middle is what the roc curve would look like if the model predicted based on random 50/50 choice.  The further our line is away from this line, the better the model is as we see.  
@@ -813,23 +646,12 @@ preds %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**Here we plot the ROC curve to ensure the model has validity, which is proven with the model being very far from the arbitrary dotted 50/50 line.  This specifially is looking at predictions of the positive class, a score (score == 1)**
 
 
 Below is a lay out of what probabilities in this model resulted in certain predictions.  You can see the impact of the 0.5 threshold as hardly any 1 predictions occur where the probability of being 1 is less than 0.5 but it jumps after crossing 0.5.  
 
 ```{r}
-
-
 preds %>%
   ggplot() +
   geom_density(aes(x = .pred_1, fill = score), 
@@ -837,17 +659,7 @@ preds %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
+**This chunk continues to use the predictions from above to visually show how the predictions of each class are present around certain probabilities, with 0.5 as the significant threshold.  This also is primarily focusing on the primary case of a score.**
 
 With this great and accurate model, we put it to the test with a recent drive from the College Football playoffs.  
 
@@ -856,16 +668,7 @@ drive_two_min_training
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**We peak at our set again to prep our new test data below....**
 
 
 Predicting with our model...
@@ -894,16 +697,7 @@ watson_to_renfrow %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**Here we create our new daatset representing the exact drive and scenario listed above and pipe in to display it.**
 
 
 ```{r}
@@ -915,18 +709,7 @@ predict(lasso_final_mod, new_data = watson_to_renfrow) %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
-
+**We use our finalized and fit model to take in this new case as new data, as we did with the testing data, and output the prediction.**
 
 **You can see our model predicts a score correctly!**
 
@@ -952,17 +735,7 @@ cv_split <- vfold_cv(drive_two_min_training,
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
+**We set the seed to reproduce, and split the data the same way we ddi with lasso, doing the same with training and testing and splitting for 5 cv folds.**
 
 
 ```{r}
@@ -972,17 +745,7 @@ rf_recipe <- recipe(score ~ .,
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
+**Our recipe for random forest is much more basic with only our needed upsampling desired for the aforementioned reasons.**
 
 
 ```{r}
@@ -995,17 +758,7 @@ rf_model <- rand_forest(mtry = tune(),
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
+**We set up our random forest model, with classification again and the appropriate engine of ranger.  We also set trees at a standard 100 and prep to tune min n (min num of trees) and mtry (what goes into how the tree determines when to stop splitting the branches).**
 
 ```{r}
 rf_workflow <- workflow() %>%
@@ -1014,18 +767,7 @@ rf_workflow <- workflow() %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
-
+**Here we establish the workflow by combining recipe and model.**
 
 
 ```{r}
@@ -1044,17 +786,7 @@ rf_tune <-
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
+**We create a "penalty grid" for our tuning parameters and apply that and our cv splitting, with control, to create our tune to find desirable mtry and min n vars.**
 
 Performing a similar process as above, we were able to pull our overall accuracy from our best model and our ROC AUC as well.  We can see a decently high 80% accuracy rate and 88% ROC AUC.    
 
@@ -1062,22 +794,14 @@ Performing a similar process as above, we were able to pull our overall accuracy
 ```{r}
 rf_tune %>%
   collect_metrics(metric = "accuracy") %>%
-  filter(.config == "Preprocessor1_Model1") %>%
+  filter(.config == "Preprocessor1_Model3") %>%
   kbl() %>% 
   kable_paper("striped") %>% 
   add_header_above(c("Decision Tree Random Forest Best Model" = 8))
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
+**We pipe in to grab our best accuracy and roc auc to see the best values for our tuning parameters.**
 
 
 
@@ -1090,17 +814,7 @@ rf_tune %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
-
+**We then pipe in to hone in on our specific desired and best tuning parameters.**
 
 
 ```{r}
@@ -1114,15 +828,7 @@ rf_tune %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
+**We now visualize our min n tune to ensure we have the best value with the best accuracy (which we do with 2)**
 
 
 
@@ -1137,16 +843,7 @@ rf_tune %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**We now visualize our mtry tune to ensure we have the best value with the best accuracy (which we do with 12)**
 
 
 You can see a goofier looking accuracy chart as the tuning parameters here are related to how the tree decides cut offs including minimum number of trees.  You can see from our selected best model that the min_n optimized value of 2 and mtry value of 6 represent the peak accuracy values.     
@@ -1249,15 +946,7 @@ lasso_tune %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
+**We pipe into our lasso tune here to grab our predictions and look at overall metrics and performance.  We define how to calculate accuracy, sensitivity, and specificity.  We produce these metrics grouping based upon the different possible tunes.  Here, we are able to look at performance in general with many instances, not just one metric.**
 
 
 
@@ -1283,17 +972,7 @@ rf_tune %>%
 ```
 
 
-
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**We pipe into our rf tune here to grab our predictions and look at overall metrics and performance.  We define how to calculate accuracy, sensitivity, and specificity.  We produce these metrics grouping based upon the different possible tunes.  Here, we are able to look at performance in general with many instances, not just one metric.**
 
 
 ```{r}
@@ -1320,16 +999,7 @@ boost_tune %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-
-
-
-
-
-
-
+**We pipe into our boost tune here to grab our predictions and look at overall metrics and performance.  We define how to calculate accuracy, sensitivity, and specificity.  We produce these metrics grouping based upon the different possible tunes.  Here, we are able to look at performance in general with many instances, not just one metric.**
 
 
 ```{r}

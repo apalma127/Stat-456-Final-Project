@@ -1,5 +1,5 @@
 ---
-title: "Final Product"
+title: "Two Minute Drill -- Final Product"
 author: "Anthony Palma and Ben Wagner"
 output: 
   html_document:

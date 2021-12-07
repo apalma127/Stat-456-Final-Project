@@ -1199,16 +1199,7 @@ boost_tune <- xgboost_workflow %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-**BEN** --------------------------------------------------------------------------------
-explanation
-**BEN** --------------------------------------------------------------------------------
-
-
-
-
+Here we first specify the model and the mode we are planning to use the model for (Classification). We set our arguments such as the number of splits we want in our tree and the minimum number of nodes to be further split. Next, we write the recipe for the model. This is the same as all the previous two models. Just like other models, we put the recipe and model specification into a workflow and set the penalty grid. Finally, we tune the model using our training split.
 
 
 
@@ -1233,16 +1224,7 @@ boost_tune %>%
 ```
 
 
-**EXPLAIN CODE**
-
-
-**BEN** --------------------------------------------------------------------------------
-explanation
-**BEN** --------------------------------------------------------------------------------
-
-
-
-
+Here we used the tuned model in order to show the accuracy rate of the best model. We create another table using Kable to show Accuracy and ROC AUC. 
 
 
 Again, like the Random Forest model we created, the Boosted model is hard to interpret and actually less accurate than the logistic regression we fit first. It would be much more beneficial to have a model of which we can view each variable and understand how that affects the final prediction. The boosted model lacks that trait.

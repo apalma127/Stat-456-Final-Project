@@ -691,7 +691,7 @@ rf_tune %>%
 ```
 
 
-```{r}
+```{r, echo = FALSE}
 rf_tune %>% 
   collect_metrics() %>% 
   filter(.metric == "accuracy") %>% 
@@ -701,7 +701,7 @@ rf_tune %>%
   labs(x = "Min Num of Trees", y = "accuracy")
 ```
 
-```{r}
+```{r, echo = FALSE}
 rf_tune %>% 
   collect_metrics() %>% 
   filter(.metric == "accuracy") %>% 

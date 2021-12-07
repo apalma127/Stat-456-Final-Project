@@ -126,7 +126,7 @@ drive_summary_data <- drive_summary_data %>%
 drive_summary_data
 ```
 
-Here you can see the number of drives that began under 2 minutes and 30 seconds left in the first or second halves from 2018 to today. As you can see, it is not too often that a team successfully completes a drive by scoring points. Just more than 21% of the time, teams have score at least 3 points and kick a field goal. While only 10% of the time, teams have reached the endzone for 6.
+Here you can see the number of drives that began under 2 minutes and 30 seconds left in the first or second halves from 2018 to today. As you can see, it is not too often that a team successfully completes a drive by scoring points. Just more than 21% of the time, teams have scored at least 3 points by kicking a field goal. While only 10% of the time, teams have reached the endzone for 6.
 
 ```{r, echo=FALSE, warning=FALSE, message=FALSE}
 drive_summary_data %>% 
@@ -156,11 +156,11 @@ drive_summary_data %>%
   add_header_above(c("2-minute Drills in the last 4 Seasons" = 6))  
 ```
 
-Now why should we take a look at this specific aspect of football? A successful 2-minute drill could have massive impacts on the probability of the team winning the game. Let me remind you of week 10 in 2020. The Buffalo Bills drive the length of the field, managing their own two minute drill. Josh Allen and the Bills end the drive by finding the endzone when Allen slings a beautiful 40 yard dot to his favorite target Stefon Diggs with just over 30 seconds left in the game. There was a 90% probability that the Bills just secured the win, but the Cardinals had other plans.
+Now why should we take a look at this specific aspect of football? A successful 2-minute drill could have massive impacts on the probability of the team winning the game. Let me remind you of week 10 in 2020. The Buffalo Bills drove the length of the field, managing their own two minute drill. Josh Allen and the Bills capped off the drive by finding the endzone when Allen slung a beautiful 40 yard dot to his favorite target Stefon Diggs with just over 30 seconds left in the game. There was a 90% probability that the Bills had just secured the win, but the Cardinals had other plans.
 
 In a mere 3 plays, the Cardinals marched down to the 43 yard line in Bills territory. The rest will go down as one of the greatest plays in NFL history. Murray scrambles out of the pocket and heaves one down the field to a triple teamed DeAndre Hopkins who reaches up and snags the Bills hopes. Although a little luck was involved in this drive, the Cardinals effectively managed the amount of time they were given and won the game despite the statistics. That is what a great two minute drill drive can do for a team any given week.
 
-Here we can see the quarterbacks that have the best rate of scoring either scoring a field goal or a touchdown over the past 4 seasons. Those closer to the top left show us that they are efficient when the clock strike below 2.
+Here we can see the quarterbacks that have the best rate of scoring either a field goal or a touchdown over the past 4 seasons. Those closer to the top right show us that they are efficient when the clock strike below 2.
 
 ```{r, echo=FALSE}
 drive_summary_data %>%
@@ -277,7 +277,7 @@ drive_summary_data %>%
 
 Our primary model we will be focusing on is a Logistic Regression.  This model specializes in predicting probabilities of our outcome, not just the outcome.  That way with this model, we can not only see whether it predicts a score or not but we can see and have access to the probabilities it used to predict the outcome.  
 
-When creating this model, we will be using a Lasso Approach which stands for least absolute shrinkage and selection operator.  In short, this type of modeling selects variables and their impact size while taking into account maximizing the accuracy and interpretability of the model.       
+When creating this model, we will be using a Lasso approach which stands for "Least Absolute Shrinkage and Selection Operator." In short, this type of modeling selects variables and their impact size while taking into account maximizing the accuracy and interpretability of the model.       
 
 ```{r, include=FALSE}
 drive_summary_data$completion_perc[is.na(drive_summary_data$completion_perc)] <- 0
@@ -383,9 +383,9 @@ lasso_tune <-
 ```
 
 
-Below are the results of out 5 fold cross validation from our modeling.  In short, we separated the data into two groups: one to build the model off (75%) and the other to test and see how well the model works.
+Below are the results of our 5 fold cross validation from our modeling.  In short, we separated the data into two groups: one to build the model off (75%) and the other to test and see how well the model works.
 
-Each fold is using a different part of the 75% of the training set to build the model and testing upon the rest.  Over and over and over to amass tons of data on the best logistic regression model.  
+Each fold is using a different part of the 75% of the training set to build the model and testing upon the rest. This is done over and over and over to amass tons of data on the best logistic regression model.  
 
 ```{r, echo = FALSE}
 
@@ -400,7 +400,7 @@ lasso_tune %>%
 
 ```
 
-Those different fold accuracies were also used to test using a different penalty parameter for lasso, which in this case helps to determine what the insignificance cut off is for throwing out "indeterminate" variables.  The accuracies appear to be quite high for most penalties.   
+Those different folds and their resulting accuracies were also used to try out different penalty parameters for lasso, which in this case helps to determine what the insignificance cut off is for throwing out "indeterminate" variables.  The accuracies appear to be quite high for most penalties.   
 
 ```{r, echo = FALSE}
 lasso_tune %>% 
@@ -445,7 +445,7 @@ lasso_final_wf <- lasso_wf %>%
 lasso_final_wf
 ```
 
-Now for some interpretation and meaning....below we have the coefficients of each variable from the logistic regression.  Normally in log odds form, we exponentiated the variables to now have them in an odds and odds ratio form, a much more interpretable form.    
+Now for some interpretation and meaning....below we have the coefficients of each variable from the logistic regression.  While normally in log odds form, we exponentiated the variable coefficients to now have them in an odds and odds ratio form, a much more interpretable style.    
 
 ```{r, echo = FALSE}
 lasso_final_mod <- lasso_final_wf %>% 
@@ -464,14 +464,13 @@ lasso_final_mod %>%
 
 Above, you can see the logistic regression model output for all of our variables and their coefficients.  
 
-Generally, if a coefficient is above one it shows a positive impact upon the likelihood of a two minute drill drive resulting in success.  
-
-A coefficient value of one indicates no change.
-And a coefficient value of less than one means an increase in that variable results in a lesser chance of scoring.  
+Generally, if a coefficient is above one (1) it shows a positive impact upon the likelihood of a two minute drill drive resulting in success.  
+A coefficient value of one (1) indicates no change.
+And a coefficient value of less than one (1) means an increase in that variable results in a lesser chance of scoring.  
 
 Variables that **positively** impact the likelihood of scoring:
 
-- qbr
+- qbr raw
 - total yards
 - yards net -- **LARGEST positive impact upon score outcome**
 - total rush yards
@@ -497,7 +496,7 @@ lasso_final_mod %>%
   vip()
 ```
 
-Our model's best fitting model was quite well in prediction with a strong 86% accuracy.  Additionally, its ROC AUC, or the area under the curve, is quite high as well at 88% denoting a high level of confidence that the model will be able to distinguish between the score and no score class (88% confident to be exact).  
+Our best fitting model was quite well in prediction with a strong 86% accuracy.  Additionally, its ROC AUC, or the area under the curve, is quite high as well at 88% denoting a high level of confidence that the model will be able to distinguish between the score and no score class (88% confident to be exact).  
 
 ```{r, echo = FALSE}
 lasso_test <- lasso_final_wf %>% 
@@ -536,7 +535,7 @@ Metrics to Note:
 
 **Sens = Sensitivity -- Ratio between how much was classified as a score to how much was actually a score of that**
 **Spec = Specificity -- Ratio between how much was classified as not a score to how much was actually not a score of that**
-**Precision -- Ratio of much was correctly classified as a score out of all scores **
+**Precision -- Ratio of how much was correctly classified as a score out of all scores **
 **F meas -- Indicates classification strength**
 
 ```{r, echo = FALSE}
@@ -549,7 +548,7 @@ custom_metrics(preds, truth = score,
   add_header_above(c("Lasso Log Reg Finalized Model Metrics" = 3)) 
 ```
 
-The relationship between sensitivity and specificity can be seen here.  The dotted line in the middle is what the roc curve would look like if the model predicted based on random 50/50 choice.  The further our line is away from this line, the better the model as we see.  
+The relationship between sensitivity and specificity can be seen below  The dotted line in the middle is what the roc curve would look like if the model predicted based on random 50/50 choice.  The further our line is away from this line, the better the model is as we see.  
 
 ```{r, echo = FALSE}
 preds %>%
@@ -582,10 +581,10 @@ Predicting with our model...
 Clemson ball on Clem 32, 68 yards to go to win the game
 Clemson ends up driving all 68 yards for a Deshaun Watson pass to Hunter Renfrow for a TD to win the game with 1 second left. 
 
-How does our best model, the logistic regression predict this? 
+**How does our best model, the logistic regression predict this?** 
 
 Data was obtained from ESPN's cache of play by play ....
-some unavailable data at the time like game qbr has an average of the season for the passer
+some unavailable data at the time like game qbr was replaced with an average of that metric for that player for the season 
 
 
 ```{r, echo = FALSE}
@@ -612,7 +611,6 @@ predict(lasso_final_mod, new_data = watson_to_renfrow) %>%
 
 
 For the reasons above, we feel very comfortable with the highly accurate and interpretable Lasso Log Regression.  To ensure we weren't missing a home run with any other model types, we also explored modeling with two different decision tree applications.  
-
 
 ## Decision Tree -- Random Forest
 
@@ -713,7 +711,7 @@ rf_tune %>%
   labs(x = "Mtry", y = "accuracy")
 ```
 
-You can see a goofier looking accuracy chart as the tuning parameters here are related to how the tree decides cut offs including minimum number of trees.  You can see from our selected best model the min_n optimized value of 2 and mtry value of 6 representing the peak accuracy values still.   
+You can see a goofier looking accuracy chart as the tuning parameters here are related to how the tree decides cut offs including minimum number of trees.  You can see from our selected best model that the min_n optimized value of 2 and mtry value of 6 represent the peak accuracy values.     
 
 This model was lacking in interpretability in a sense that we desired a more standard regression output as provided by a logistic regression above. 
 
@@ -858,11 +856,13 @@ Avg_Accuracybb
 
 All models seem to have high accuracies but Log Reg and Random Forest are roughly equal around 80%. 
 
-When factoring in our desired outcome with standard coefficients, and taking into account the much higher true positive rate in the log reg output, we have much more confidence in our selection of the logistic regression model and stand by our analysis as appropriate  
+When factoring in our desired outcome with outputted coefficients, and taking into account the much higher true positive rate in the log reg output, we have much more confidence in our selection of the logistic regression model and stand by our analysis as appropriate  
 
 # Takeaways 
 
-By cleaning play by play data, and creating summary statistics relating to each drive that occurred under two minutes, we were able to successfully analyze the importance of the 2-minute Drill in the game of football. Not only did we look into the players that are the "clutchest" under 2 minutes, but created our own model to correctly classify the result of a 2-minute drill drive. From there, we could observe the most important variable to determine what is the most important thing a team can do to end their drive with a score. We show that QBR and number of penalties a team takes during the drive are the most important variables when it comes to team controllable variables. However, if you wanted to predict whether a team can end the drive in a score you should highly consider the number of yards the team has to drive.
+By cleaning play by play data, and creating summary statistics relating to each drive that occurred under two minutes, we were able to successfully analyze the importance of the 2-minute Drill in the game of football. Not only did we look into the players that are the "clutchest" under 2 minutes, but created our own model to correctly classify the result of a 2-minute drill drive. From there, we could observe the most important variable to determine what is the most important thing a team can do to end their drive with a score. 
+
+We show that QBR and number of penalties a team takes during the drive are the most important variables when it comes to team controllable variables. However, if you wanted to predict whether a team can end the drive in a score you should highly consider the number of yards the team has to drive.
 
 I think looking further into each 2 minute drill could lead to even more useful insights. One downfall of our own format is that we didn't create enough variables to summarize each drive. There could be many more drive specific characteristics that could effect the models we created, such as if the team driving is the home or away team and the weather during the game. Nonetheless, we decided to focus only on the on-field aspects of the drive, especially Quarterback play. 
 

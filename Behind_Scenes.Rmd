@@ -95,7 +95,7 @@ two_min_new <- two_min_new[!is.na(two_min_new$passer), ]
 
 **In this code chunk we read in the play by play data and weekly qbr data from the 2018 season to present day. We got the play by play data from the package "nflfastr" found on the website Pysport. It shows data on every play for every game with over 300 variables to describe the play and the overall game during that play. The qbr data comes from the "nflverse" package. Like the "tidyverse" package, this package contains many different libraries including the library that loads weekly Quarterback performance metrics. We load in every week from 2018-Today just like the play by play data.** 
 
-**From there, we filtered the play by play data to show only plays that occured when the game clock read 2:30 or less in either the first or second half of the game. We decided to add 30 seconds to the 2 minutes because there are many 2 minute drill drives that start before 2 minutes are on the clock, so we didn't want to exclude those drives.** 
+**From there, we filtered the play by play data to show only plays that occurred when the game clock read 2:30 or less in either the first or second half of the game. We decided to add 30 seconds to the 2 minutes because there are many 2 minute drill drives that start before 2 minutes are on the clock, so we didn't want to exclude those drives.** 
 
 **To look into the 2 minute drill specific data, we grouped the data by drive in order to look at the whole drive and showed some summary statistics. We then created a binary variable to show whether that drive scored a touchdown, field goal, or simply scored points in general. We then joined the weekly qbr data to the new 2 minute drill data.**
 
@@ -133,7 +133,7 @@ drive_summary_data <- drive_summary_data %>%
 drive_summary_data
 ```
 
-**The next dataset we create here groups the data by drive just like the last. However, we created more variables such as; the number of run plays, pass plays, total passing yards, qb completion percentage, total yards and rushing total yards. Finally, we create a variable that shows the number of yards the team has to drive to reach the endzone. This variable was a bit harder to create because we used a character variable that shows which territory a team was in and what yardline they were on at the beginning of the drive. For example, if the team was on the "TEN 25" we checked to see that the team on offense was the same as the abbreviation in the beginning of the character. If so, we subract the number that followed from 100 to show how many yards they have left to go.**
+**The next dataset we create here groups the data by drive just like the last. However, we created more variables such as; the number of run plays, pass plays, total passing yards, qb completion percentage, total yards and rushing total yards. Finally, we create a variable that shows the number of yards the team has to drive to reach the endzone. This variable was a bit harder to create because we used a character variable that shows which territory a team was in and what yardline they were on at the beginning of the drive. For example, if the team was on the "TEN 25" we checked to see that the team on offense was the same as the abbreviation in the beginning of the character. If so, we subtract the number that followed from 100 to show how many yards they have left to go.**
 
 **The last bit of cleaning we do is to fix data points related to Aaron Rodgers. The data had him listed as both "Aa.Rodgers" and "A.Rodgers". This would not work to show his overall stats.** 
 
@@ -233,7 +233,7 @@ drive_summary_data %>%
 
 ```
 
-**We decided to make these two plots a little bit more simplier because we didn't want to overcrowd the overall message of the plots (That Quaterback play affects the probability of that team winning). The first plot shows a scatter plot of all the drives, faceted by those that score and those that did not. On top of the plot we show a line of best fit in order to show that the line of best fit is higher indicating a greater win probability. The next plot shows that those quarterbacks that led a successful 2-minute drive had a better performance on the week overall.**   
+**We decided to make these two plots a little bit more simple because we didn't want to overcrowd the overall message of the plots (That Quarterback play affects the probability of that team winning). The first plot shows a scatter plot of all the drives, faceted by those that score and those that did not. On top of the plot we show a line of best fit in order to show that the line of best fit is higher indicating a greater win probability. The next plot shows that those quarterbacks that led a successful 2-minute drive had a better performance on the week overall.**   
 
 
 
@@ -287,11 +287,11 @@ drive_summary_data %>%
 
 **This code segments our dataset further.  By grouping by drive and game id, we are able to now look at each tow min drive as one observation as opposed to a collection of plays.  We also mutated and created some new variables which summed and did some basic math to complement the variables we currently have, including our important score indicators as binary outputs (td, fg, and score which is td or fg).**
 
-**One of the most difficult cleaning tasks we found was creating a yards to go start variable, the yards left to go to the endzone from the start of the drive.  In its current form, we had a team name in 3 - 4 characters and a yardline as thr field goes 0 to 50 and then back down to 0.  This new variable removed the characters preceding and used that to calculate yards to go.**
+**One of the most difficult cleaning tasks we found was creating a yards to go start variable, the yards left to go to the endzone from the start of the drive.  In its current form, we had a team name in 3 - 4 characters and a yardline as the field goes 0 to 50 and then back down to 0.  This new variable removed the characters preceding and used that to calculate yards to go.**
 
 **We then created our primary dataset that we will use in our analysis, drive summary data, which included only the variables we wanted to predict our outcome variable, score.  We tidy'd this up by ensuring the drives are arranged in a logical way, still grouped to represent an observation, with small factor and numeric transformations where needed.**
 
-**One other difficult task was cleaning and dealing with NAs.  This last couple of lines deal with NAs in the yards to go start as they were derived from simply being a "50" prior, with no characters prior to parse.  Thus, I replaced these values wtih the appropriate "50".**
+**One other difficult task was cleaning and dealing with NAs.  This last couple of lines deal with NAs in the yards to go start as they were derived from simply being a "50" prior, with no characters prior to parse.  Thus, I replaced these values with the appropriate "50".**
 
 
 ## Lasso Logisitic Regression 
@@ -317,7 +317,7 @@ drive_summary_data %>%
   count(n_miss_all)
 ```
 
-**We continue working to address pesky NA values... we delt with them similarily as above except we found these NAs to be presnet when that field did not occur. Thus, we replaced these where appropriate with "0".**
+**We continue working to address pesky NA values... we dealt with them similarly as above except we found these NAs to be present when that field did not occur. Thus, we replaced these where appropriate with "0".**
 
 **We then continued to mold the dataset we will use to analyze by removing variables that did not have predictive power because of their nature or their structure being characters (team, game id, drive, or drive start line) or variables that were too closely tied to our outcome variables (td, fg).**
 
@@ -338,7 +338,7 @@ drive_two_min_testing <- testing(drive_two_min_split)
 ```
 
 
-**We began our modeling work here with a set seed to ensure we continue to get the same split no matter how much we run this chunk.  We split our data int training and testing to ensure we have extra data to test our model on, to prevent overfitting**
+**We began our modeling work here with a set seed to ensure we continue to get the same split no matter how much we run this chunk.  We split our data int training and testing to ensure we have extra data to test our model on, to prevent over fitting**
 
 
 ```{r}
@@ -348,7 +348,7 @@ count(score)
 ```
 
 
-**To prep for out recipe and modeling, we wanted to peak at the distribution of our outcome variable, score, to see if we needed to upsample if it was lopsided (which is is).**
+**To prep for out recipe and modeling, we wanted to peak at the distribution of our outcome variable, score, to see if we needed to up sample if it was lopsided (which is is).**
 
 
 ```{r}
@@ -365,9 +365,9 @@ lasso_recipe <- recipe(score ~ .,
 ```
 
 
-**We set a seed again to make sure we have reproduceability.  We proceed with our recipe, a necessary part of building our model, by stating what we desire to perform and transforming variables to what they need to be.**
+**We set a seed again to make sure we have reproduce-ability.  We proceed with our recipe, a necessary part of building our model, by stating what we desire to perform and transforming variables to what they need to be.**
 
-**This model will use all variables from our training set to predict our score outcome, as seen above.  We made sure we adjusted our score outcome by upsampling and making the split more even between score 0 and score 1.... if we did not, the model may have chosen to simply choose the majority class everytime because of how simple and accurate that would be, yet that is a terrible model.  Additionally, we made msure all factors were dummies and we had all predictors normalized and not skewed, minus the outcome variables of course.**
+**This model will use all variables from our training set to predict our score outcome, as seen above.  We made sure we adjusted our score outcome by up sampling and making the split more even between score 0 and score 1.... if we did not, the model may have chosen to simply choose the majority class every time because of how simple and accurate that would be, yet that is a terrible model.  Additionally, we made sure all factors were dummies and we had all predictors normalized and not skewed, minus the outcome variables of course.**
 
 
 ```{r}
@@ -399,7 +399,7 @@ lasso_wf
 ```
 
 
-**We create our model here, specifiying our desired type, log reg, and its associated engine, glmnet.  We set to tune our tuning parameter, penalty, which is specific to lasso and how it shrinks and regularizes variables based upon this parameter.  And lastly, we designate our desired type being Classification because score is binary, 0 or 1.**
+**We create our model here, specifying our desired type, log reg, and its associated engine, glmnet.  We set to tune our tuning parameter, penalty, which is specific to lasso and how it shrinks and regularizes variables based upon this parameter.  And lastly, we designate our desired type being Classification because score is binary, 0 or 1.**
 
 **We also create our workflow, which combines our model and recipe together into one.**
 
@@ -426,9 +426,9 @@ lasso_tune <-
 ```
 
 
-**We set our seed again to reproduce anddesignate our training cross validation to split 5 folds, a pretty standard value.**
+**We set our seed again to reproduce and designate our training cross validation to split 5 folds, a pretty standard value.**
 
-**We also establish a penalty grid of possible penalty values that we will tune and test to see which best fits our model.  We incorporate this into our lasso tune which uses our work flow (with our model and recipe together) to help us find the rigth penalty parameter for our most accurate and best predicting model.  We specify within this our desire to use 5 folds in this process and set a control grid to ensure we are applying what we want to all resampling objects.**
+**We also establish a penalty grid of possible penalty values that we will tune and test to see which best fits our model.  We incorporate this into our lasso tune which uses our work flow (with our model and recipe together) to help us find the right penalty parameter for our most accurate and best predicting model.  We specify within this our desire to use 5 folds in this process and set a control grid to ensure we are applying what we want to all re-sampling objects.**
 
 Below are the results of our 5 fold cross validation from our modeling.  In short, we separated the data into two groups: one to build the model off (75%) and the other to test and see how well the model works.
 
@@ -507,7 +507,7 @@ lasso_final_wf
 ```
 
 
-**Using our previously found penalty based upon best accuracy performance, we use that to pipe into our workflow with our model and recipe and finalize our previously desiganted penalty parameter of "tune" to this btes metric.**
+**Using our previously found penalty based upon best accuracy performance, we use that to pipe into our workflow with our model and recipe and finalize our previously designated penalty parameter of "tune" to this best metric.**
 
 
 Now for some interpretation and meaning....below we have the coefficients of each variable from the logistic regression.  While normally in log odds form, we exponentiated the variable coefficients to now have them in an odds and odds ratio form, a much more interpretable style.    
@@ -530,7 +530,7 @@ lasso_final_mod %>%
 
 **With this finalized workflow, we can create a finalized model fitting this to our training data.**
 
-**Most importantly, we were able to grab the models variable coefficents, exponentiating them to take them from a log odds interpretation to an odds and odds ratio one.  That way, we are able to make more sense of this.**
+**Most importantly, we were able to grab the models variable coefficients, exponentiating them to take them from a log odds interpretation to an odds and odds ratio one.  That way, we are able to make more sense of this.**
 
 
 Above, you can see the logistic regression model output for all of our variables and their coefficients.  
@@ -599,7 +599,7 @@ collect_predictions(lasso_test) %>%
 ```
 
 
-**This section uses our finalzied and fit model from the previous chunk to predict upon our testing data previously established.  This is a very useful chunk as you can see the details of drives, specifically their outcome, their predicted outcome, and why they had such predicted outcomes with their associated probabilities listed.**
+**This section uses our finalized and fit model from the previous chunk to predict upon our testing data previously established.  This is a very useful chunk as you can see the details of drives, specifically their outcome, their predicted outcome, and why they had such predicted outcomes with their associated probabilities listed.**
 
 We can also look at our predictions in the aggregate with a matrixed table.  
 
@@ -612,7 +612,7 @@ conf_mat(preds, .pred_class, score)
 ```
 
 
-**With these predictions from our fit above, we can see the final model perfromance in the aggregate with a conf matrix displaying how many predictions were predicted each way and how accurate it was.**
+**With these predictions from our fit above, we can see the final model performance in the aggregate with a conf matrix displaying how many predictions were predicted each way and how accurate it was.**
 
 Other important model metrics are laid out in the table below, with these metrics also proving how well the model predicts.
 
@@ -634,7 +634,7 @@ custom_metrics(preds, truth = score,
 ```
 
 
-**This code does a lot....it grabs very importnat metrics from the finalized and fit model, specifically from when it predicted our testing data.  It uses score as the true metric of score and predicted class to see when these two matched and when they didn't.  It used this matching process to spit out very improtant metrics looking at how the model predicted the positive case, negative case, and in generall all cases.**
+**This code does a lot....it grabs very important metrics from the finalized and fit model, specifically from when it predicted our testing data.  It uses score as the true metric of score and predicted class to see when these two matched and when they didn't.  It used this matching process to spit out very important metrics looking at how the model predicted the positive case, negative case, and in general all cases.**
 
 
 The relationship between sensitivity and specificity can be seen below  The dotted line in the middle is what the roc curve would look like if the model predicted based on random 50/50 choice.  The further our line is away from this line, the better the model is as we see.  
@@ -646,7 +646,7 @@ preds %>%
 ```
 
 
-**Here we plot the ROC curve to ensure the model has validity, which is proven with the model being very far from the arbitrary dotted 50/50 line.  This specifially is looking at predictions of the positive class, a score (score == 1)**
+**Here we plot the ROC curve to ensure the model has validity, which is proven with the model being very far from the arbitrary dotted 50/50 line.  This specifically is looking at predictions of the positive class, a score (score == 1)**
 
 
 Below is a lay out of what probabilities in this model resulted in certain predictions.  You can see the impact of the 0.5 threshold as hardly any 1 predictions occur where the probability of being 1 is less than 0.5 but it jumps after crossing 0.5.  
@@ -697,7 +697,7 @@ watson_to_renfrow %>%
 ```
 
 
-**Here we create our new daatset representing the exact drive and scenario listed above and pipe in to display it.**
+**Here we create our new data set representing the exact drive and scenario listed above and pipe in to display it.**
 
 
 ```{r}
@@ -735,7 +735,7 @@ cv_split <- vfold_cv(drive_two_min_training,
 ```
 
 
-**We set the seed to reproduce, and split the data the same way we ddi with lasso, doing the same with training and testing and splitting for 5 cv folds.**
+**We set the seed to reproduce, and split the data the same way we did with lasso, doing the same with training and testing and splitting for 5 cv folds.**
 
 
 ```{r}
@@ -745,7 +745,7 @@ rf_recipe <- recipe(score ~ .,
 ```
 
 
-**Our recipe for random forest is much more basic with only our needed upsampling desired for the aforementioned reasons.**
+**Our recipe for random forest is much more basic with only our needed up sampling desired for the aforementioned reasons.**
 
 
 ```{r}
@@ -1078,7 +1078,7 @@ We see no potential harm for this analysis.  We were very open about how we perf
 
 
 
-- lasso log reg with inetrpretable outputs and metrics
+- lasso log reg with interpretable outputs and metrics
 
 - had many errors for days and finally got it w a small tweak
 

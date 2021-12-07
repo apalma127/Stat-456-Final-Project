@@ -370,7 +370,7 @@ lasso_recipe <- recipe(score ~ .,
 **This model will use all variables from our training set to predict our score outcome, as seen above.  We made sure we adjusted our score outcome by up sampling and making the split more even between score 0 and score 1.... if we did not, the model may have chosen to simply choose the majority class every time because of how simple and accurate that would be, yet that is a terrible model.  Additionally, we made sure all factors were dummies and we had all predictors normalized and not skewed, minus the outcome variables of course.**
 
 
-```{r}
+```{r, include = FALSE}
 lasso_recipe %>% 
   prep(drive_two_min_training) %>%
   juice() %>%

@@ -162,7 +162,8 @@ In a mere 3 plays, the Cardinals marched down to the 43 yard line in Bills terri
 
 
 ```{r, echo=FALSE}
-knitr::include_graphics("C:\\Users\\littl\\OneDrive\\Documents\\Advanced Data Sci\\Stat-456-Final-Project\\DeandreCatch.jpg")
+knitr::include_graphics("/Users/anthonypalma/Desktop/stat 456/Stat-456-Final-Project/DeandreCatch.jpg")
+
 ``` 
 
 
@@ -589,7 +590,7 @@ Clemson ball on Clem 32, 68 yards to go to win the game
 Clemson ends up driving all 68 yards for a Deshaun Watson pass to Hunter Renfrow for a TD to win the game with 1 second left. 
 
 ```{r, fig.align='center', echo=FALSE}
-knitr::include_graphics("C:\\Users\\littl\\OneDrive\\Documents\\Advanced Data Sci\\Stat-456-Final-Project\\Nat_Champ_Pic.jpeg")
+knitr::include_graphics("/Users/anthonypalma/Desktop/stat 456/Stat-456-Final-Project/Nat_Champ_Pic.jpeg")
 ``` 
 
 **How does our best model, the logistic regression predict this?** 

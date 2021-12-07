@@ -92,11 +92,11 @@ two_min_new <- two_min_new[!is.na(two_min_new$passer), ]
 
 ```
 
-In this code chunk we read in the play by play data and weekly qbr data from the 2018 season to present day. We got the play by play data from the package "nflfastr" found on the website Pysport. It shows data on every play for every game with over 300 variables to describe the play and the overall game during that play. The qbr data comes from the "nflverse" package. Like the "tidyverse" package, this package contains many different libraries including the library that loads weekly Quarterback performance metrics. We load in every week from 2018-Today just like the play by play data. 
+**In this code chunk we read in the play by play data and weekly qbr data from the 2018 season to present day. We got the play by play data from the package "nflfastr" found on the website Pysport. It shows data on every play for every game with over 300 variables to describe the play and the overall game during that play. The qbr data comes from the "nflverse" package. Like the "tidyverse" package, this package contains many different libraries including the library that loads weekly Quarterback performance metrics. We load in every week from 2018-Today just like the play by play data.** 
 
-From there, we filtered the play by play data to show only plays that occured when the game clock read 2:30 or less in either the first or second half of the game. We decided to add 30 seconds to the 2 minutes because there are many 2 minute drill drives that start before 2 minutes are on the clock, so we didn't want to exclude those drives. 
+**From there, we filtered the play by play data to show only plays that occured when the game clock read 2:30 or less in either the first or second half of the game. We decided to add 30 seconds to the 2 minutes because there are many 2 minute drill drives that start before 2 minutes are on the clock, so we didn't want to exclude those drives.** 
 
-To look into the 2 minutre drill specific data, we grouped the data by drive in order to look at the whole drive and showed some summary statistics. We then created a binary variable to show whether that drive scored a touchdown, field goal, or simply scored points in general. We then joined the weekly qbr data to the new 2 minute drill data.
+**To look into the 2 minute drill specific data, we grouped the data by drive in order to look at the whole drive and showed some summary statistics. We then created a binary variable to show whether that drive scored a touchdown, field goal, or simply scored points in general. We then joined the weekly qbr data to the new 2 minute drill data.**
 
 
 
@@ -132,9 +132,9 @@ drive_summary_data <- drive_summary_data %>%
 drive_summary_data
 ```
 
-The next dataset we create here groups the data by drive just like the last. However, we created more variables such as; the number of run plays, pass plays, total passing yards, qb completion percentage, total yards and rushing total yards. Finally, we create a variable that shows the number of yards the team has to drive to reach the endzone. This variable was a bit harder to create because we used a character variable that shows which territory a team was in and what yardline they were on at the beginning of the drive. For example, if the team was on the "TEN 25" we checked to see that the team on offense was the same as the abbreviation in the beginning of the character. If so, we subract the number that followed from 100 to show how many yards they have left to go.
+**The next dataset we create here groups the data by drive just like the last. However, we created more variables such as; the number of run plays, pass plays, total passing yards, qb completion percentage, total yards and rushing total yards. Finally, we create a variable that shows the number of yards the team has to drive to reach the endzone. This variable was a bit harder to create because we used a character variable that shows which territory a team was in and what yardline they were on at the beginning of the drive. For example, if the team was on the "TEN 25" we checked to see that the team on offense was the same as the abbreviation in the beginning of the character. If so, we subract the number that followed from 100 to show how many yards they have left to go.**
 
-The last bit of cleaning we do is to fix data points related to Aaron Rodgers. The data had him listed as both "Aa.Rodgers" and "A.Rodgers". This would not work to show his overall stats. 
+**The last bit of cleaning we do is to fix data points related to Aaron Rodgers. The data had him listed as both "Aa.Rodgers" and "A.Rodgers". This would not work to show his overall stats.** 
 
 
 
@@ -154,7 +154,7 @@ drive_summary_data %>%
   add_header_above(c("Two Minute Drill Success Rates" = 5)) 
 ```
 
-Here I created a summary data table using the package "KableExtra" in order to show summary statistics for all 2 minute drill drives. (# of TD's, # of Fg's, # of drives, TD and FG success rate)
+**Here I created a summary data table using the package "KableExtra" in order to show summary statistics for all 2 minute drill drives. (# of TD's, # of Fg's, # of drives, TD and FG success rate)**
 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
@@ -172,7 +172,7 @@ drive_summary_data %>%
   add_header_above(c("2-minute Drills in the last 4 Seasons" = 6))  
 ```
 
-I do the same thing on this next code chunk, but split by year.
+**I do the same thing on this next code chunk, but split by year.**
 
 
 Now why should we take a look at this specific aspect of football? A successful 2-minute drill could have massive impacts on the probability of the team winning the game. Let me remind you of week 10 in 2020. The Buffalo Bills drove the length of the field, managing their own two minute drill. Josh Allen and the Bills capped off the drive by finding the endzone when Allen slung a beautiful 40 yard dot to his favorite target Stefon Diggs with just over 30 seconds left in the game. There was a 90% probability that the Bills had just secured the win, but the Cardinals had other plans.
@@ -199,7 +199,7 @@ drive_summary_data %>%
   theme_bw()
 ```
 
-(Ben) This may be a plot that I am most proud of creating. Using each players headshot, I plotted the number of successful 2-minute drill drives each QB in the league has completed compared to how many drives they have attempted. 
+**(Ben) This may be a plot that I am most proud of creating. Using each players headshot, I plotted the number of successful 2-minute drill drives each QB in the league has completed compared to how many drives they have attempted.** 
 
 
 
@@ -232,7 +232,7 @@ drive_summary_data %>%
 
 ```
 
-We decided to make these two plots a little bit more simplier because we didn't want to overcrowd the overall message of the plots(That Quaterback play affects the probability of that team winning). The first plot shows a scatter plot of all the drives, faceted by those that score and those that did not. On top of the plot we show a line of best fit in order to show that the line of best fit is higher indicating a greater win probability. The next plot shows that those quarterbacks that led a successful 2-minute drive had a better performance on the week overall.   
+**We decided to make these two plots a little bit more simplier because we didn't want to overcrowd the overall message of the plots (That Quaterback play affects the probability of that team winning). The first plot shows a scatter plot of all the drives, faceted by those that score and those that did not. On top of the plot we show a line of best fit in order to show that the line of best fit is higher indicating a greater win probability. The next plot shows that those quarterbacks that led a successful 2-minute drive had a better performance on the week overall.**   
 
 
 
@@ -1378,15 +1378,53 @@ We see no potential harm for this analysis.  We were very open about how we perf
 # Problems 
 
 
-- data cleaning took a while.....ddi a lot of new vars creation and transformation
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- data cleaning took a while.....did a lot of new vars creation and transformation
 - lasso log reg had issues as new qb names constantly pop up...
-
 - finalizing rf and boost had major problems and we had to change course
 
 
 
 # Most Proud Part
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 - lasso log reg with inetrpretable outputs and metrics
 

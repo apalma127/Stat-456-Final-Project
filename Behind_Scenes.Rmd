@@ -1049,10 +1049,15 @@ We see no potential harm for this analysis.  We were very open about how we perf
 
 
 
-- data cleaning took a while.....did a lot of new vars creation and transformation
-- lasso log reg had issues as new qb names constantly pop up...
-- finalizing rf and boost had major problems and we had to change course
 
+
+
+
+
+
+A major problem we had to deal with as it relates to modeling was form of the data.  We needed it to be an exact form with no NAs.  I was not sure how to uniformly replace NAs, doing so differently for different variables.  We had to read a lotttttt of documentation to figure it out but we got there eventually.  Additionally, when initially including passer (QB) in our dataset, we had a big problem when trying to model because the QB names changed yearly and were not the same throughout.  Each fold had concerns as there were new levels in nearly every step.  We had to learn about some new step functions within the lasso recipe that took care of this.  While we ended up scrapping this variable in our model, we also had to read a lot of documentation and talk with Professor Lendway in depth to uncover the error and address it.  Lastly, we ran into a time constraint with our random forest and boosted trees models.  We ended up showing overall metrics for these models and not going too much in to detail on purpose.  Besides the important fact that they weren't in the form we wanted, we also faced a lot of issues with the way our data was presented.  After trying for days, we were unable to finalize models for the rf and boosted models, after tweaking the data so many different ways and trying so many different types of steps and up and down sampling in our recipe.
+
+If we had a couple more weeks, we also would have provided an in depth analysis, with tree visualizations, for our random forest and boosted models as we did for our lasso log reg.  
 
 
 # Most Proud Part
@@ -1074,16 +1079,4 @@ We see no potential harm for this analysis.  We were very open about how we perf
 
 
 
-
-
-
-
-- lasso log reg with interpretable outputs and metrics
-
-- had many errors for days and finally got it w a small tweak
-
-
-
-
-
-
+Anthony: My most proud part of the code I focused on was the lasso log reg.  We had errors in so many different places so many different times.  It took days to sort out what was going on and was quite frustrating especially considering the basic nature of the modeling we were attempting.  After finding some crafty ways to manipulate within the recipe, removing NAs, and even removing whole variables that were tipping the model off on the outcome making it wayyyyy to accurate (like fg and td as a proxy for score), we were finally able to finalize a workflow, model, and use the finalized forms to see some really cool and in depth details about our desired model.  
